@@ -64,6 +64,10 @@ public:
     QString connectedInterface() const { return m_iface; }
     QString lastError() const { return m_error; }
     bool tunnelIsReal() const;
+    // The tunnel is a local SOCKS5 proxy (batwg) rather than an interface;
+    // socks() is {port, user, pass, ip} while connected.
+    bool viaSocks() const { return m_tunnel && m_tunnel->viaSocks(); }
+    QVariantMap socks() const { return m_tunnel ? m_tunnel->socks() : QVariantMap(); }
 
 signals:
     void stateChanged();

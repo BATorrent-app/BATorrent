@@ -15,7 +15,7 @@ green before a merge.
 | metadata | `nameparser`, `metadatamatch`, `searchranker`, `releasegroup`, `releasetrust`, `gamereleasepick`, `episodegroup`, `mkvchapters` | Title parsing, poster lookup, ranking and trust | The full metadata fetch, which needs the network |
 | security | `security`, `memguard`, parts of `unit` | Suspicious file scan, password hashing, archive volume rules | OS antivirus behaviour |
 | downloads | `httpdownload`, `httpdownloadmanager`, `rangeplan`, `filehostresolver` | Range planning, persistence of finished and removed downloads | Unusual redirects and file hosts |
-| vpn | `vpnmanager`, `wireguardconfig` | Config parsing and saved profiles | Bringing up a real tunnel |
+| vpn | `vpnmanager`, `wireguardconfig`, `go test` in tools/batwg | Config parsing, saved profiles, and a whole tunnel on loopback (TCP, UDP, SOCKS password, wrong server key) | A real VPN server |
 | integrations | `debrid`, `geoipdb`, parts of `unit` | Debrid picks, GeoIP lookups, RSS/Atom, updater and installer checks | Live GitHub / Real-Debrid calls |
 | platform | `settingshelpers`, `contentlanguage`, parts of `unit` | Settings backup, i18n basics, stats | OS file association hooks |
 | ipc | `ipcprotocol` | Frame encoding between the UI and the engine process | The two processes end to end |

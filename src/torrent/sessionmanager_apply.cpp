@@ -53,6 +53,11 @@ bool SessionManager::applySetting(const QString &key, const QVariant &v)
     else if (key == "proxyUser")           setProxySettings(proxyType(), proxyHost(), proxyPort(), v.toString(), proxyPass());
     else if (key == "proxyPass")           setProxySettings(proxyType(), proxyHost(), proxyPort(), proxyUser(), v.toString());
     else if (key == "proxyLeakProof")      setProxyLeakProof(v.toBool());
+    else if (key == "vpnProxy") {
+        const QVariantMap m = v.toMap();
+        setVpnProxy(m.value(QStringLiteral("port")).toInt(), m.value(QStringLiteral("user")).toString(),
+                    m.value(QStringLiteral("pass")).toString());
+    }
     else if (key == "ipFilterPath")        loadIpFilter(v.toString());
     else if (key == "autoBlocklistFile")   loadAutoBlocklist(v.toString());
     else if (key == "tempPath")            setTempPath(v.toString());

@@ -104,6 +104,10 @@ jobs:
             echo "$out" | grep -q "All tests passed" || { echo "::error::$t did not pass"; fail=1; }
           done
           exit $fail
+      - name: VPN helper tests (tools/batwg)
+        working-directory: tools/batwg
+        run: go test ./...
+
       - name: WebUI JS tests
         run: node --test tests/webui/test_webui.mjs
 
@@ -197,14 +201,7 @@ jobs:
           fi
           cp -a build/third_party/libtorrent/libtorrent-rasterbar.so* AppDir/usr/lib/
           echo "Bundled fork libtorrent: $(basename "$forkso")"
-
-          # Integrated VPN: bundle wg + wg-quick (kernel WireGuard does the rest).
-          # WgTunnelLinux stages these out of the AppImage's FUSE mount at runtime
-          # and runs them via pkexec: it looks for <app>/wireguard/wg-quick.
-          sudo apt-get install -y wireguard-tools
-          mkdir -p AppDir/usr/bin/wireguard
-          install -m 755 /usr/bin/wg /usr/bin/wg-quick AppDir/usr/bin/wireguard/
-          echo "Bundled wireguard-tools: $(/usr/bin/wg --version)"
+          test -x AppDir/usr/bin/batwg || { echo "::error::batwg was not installed into the AppDir"; exit 1; }
 
       - name: Resize icon to 256x256
         run: |
@@ -426,21 +423,10 @@ jobs:
             Write-Host "::warning::fork libtorrent PDB not found — engine-DLL crashes will be unsymbolicated in Sentry (non-fatal)."
           }
           if ($env:SENTRY_ENABLED -eq "1" -and $env:BAT_SENTRY_HANDLER) { Copy-Item "$env:BAT_SENTRY_HANDLER" release/ }
-          # Integrated VPN: bundle the official WireGuard CLI. wireguard.exe embeds
-          # the signed WireGuardNT driver and installs it on demand via
-          # /installtunnelservice, so no separate WireGuard install is needed.
-          # WinWgTunnel looks for it at <app>/wireguard/wireguard.exe.
-          $wgVer = "0.5.3"
-          $wgMsi = "wireguard-amd64-$wgVer.msi"
-          Invoke-WebRequest -Uri "https://download.wireguard.com/windows-client/$wgMsi" -OutFile $wgMsi
-          New-Item -ItemType Directory -Force -Path wg_extract | Out-Null
-          $p = Start-Process msiexec.exe -ArgumentList "/a","`"$PWD\$wgMsi`"","/qn","TARGETDIR=`"$PWD\wg_extract`"" -Wait -PassThru
-          if ($p.ExitCode -ne 0) { throw "msiexec extract of WireGuard failed (exit $($p.ExitCode))" }
-          $wgExe = Get-ChildItem wg_extract -Recurse -Filter wireguard.exe | Select-Object -First 1
-          if (-not $wgExe) { throw "wireguard.exe not found in the WireGuard MSI payload" }
-          New-Item -ItemType Directory -Force -Path release/wireguard | Out-Null
-          Copy-Item $wgExe.FullName -Destination release/wireguard/wireguard.exe -Force
-          Write-Host "Bundled WireGuard $wgVer for the integrated VPN"
+          # The in-app VPN (tools/batwg), built by CMake beside the exe. No
+          # driver and no service: it is an ordinary program.
+          if (-not (Test-Path build/Release/batwg.exe)) { throw "batwg.exe was not built (is Go on the runner?)" }
+          Copy-Item build/Release/batwg.exe release/
           Compress-Archive -Path release/* -DestinationPath BATorrent-windows-x86_64-portable.zip
 
       # Static package integrity BEFORE launch: missing qwindows.dll / wrong
@@ -603,9 +589,6 @@ jobs:
         run: |
           brew install libtorrent-rasterbar boost openssl
           brew link --overwrite libtorrent-rasterbar boost openssl
-          # WireGuard CLI for the integrated VPN: the CMake POST_BUILD stages
-          # these into the bundle so the user installs nothing.
-          brew install wireguard-tools wireguard-go
 
       # Crash reporting is only built when the BAT_SENTRY_DSN repo variable is
       # set.
@@ -655,12 +638,8 @@ jobs:
           cp build/BATorrent.app/Contents/MacOS/BATorrent dmg/BATorrent.app/Contents/MacOS/
           # Ship the Crashpad handler next to the binary so Sentry finds it.
           [ "$SENTRY_ENABLED" = "1" ] && cp "$BAT_SENTRY_HANDLER" dmg/BATorrent.app/Contents/MacOS/crashpad_handler || true
-          # Carry the WireGuard tools the CMake POST_BUILD staged into the fresh
-          # bundle (integrated VPN is self-contained). codesign --deep re-signs them.
-          if [ -d build/BATorrent.app/Contents/Resources/wireguard ]; then
-            mkdir -p dmg/BATorrent.app/Contents/Resources/wireguard
-            cp build/BATorrent.app/Contents/Resources/wireguard/* dmg/BATorrent.app/Contents/Resources/wireguard/
-          fi
+          # The in-app VPN, built by CMake beside the binary. codesign --deep signs it.
+          cp build/BATorrent.app/Contents/MacOS/batwg dmg/BATorrent.app/Contents/MacOS/
           printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>' \
             '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' \
             '<plist version="1.0">' '<dict>' \

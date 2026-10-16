@@ -330,8 +330,14 @@ SessionManager::SessionManager(QObject *parent)
     setKillSwitchEnabled(settings.value("killSwitchEnabled", false).toBool());
     setAutoResumeOnReconnect(settings.value("autoResumeOnReconnect", false).toBool());
     m_proxy.loadFromSettings();
-    if (m_proxy.type() != 0)
-        m_session.apply_settings(m_proxy.settings(m_anonymousMode));
+    // The in-app VPN was on when the app last closed and the kill switch is
+    // on: nothing goes out until the tunnel is back (the app reconnects it).
+    if (settings.value("vpnHold", false).toBool() && settings.value("killSwitchEnabled", true).toBool()) {
+        m_vpnProxyPort = 1;
+        qInfo() << "[session] vpn was on at exit: holding traffic until it reconnects";
+    }
+    if (m_proxy.type() != 0 || m_vpnProxyPort > 0)
+        applyProxy();
     setAutoMove(settings.value("autoMoveEnabled", false).toBool(),
                 settings.value("autoMovePath").toString());
     m_preallocate = settings.value("preallocate", false).toBool();

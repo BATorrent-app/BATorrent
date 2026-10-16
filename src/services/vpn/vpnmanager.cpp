@@ -229,7 +229,8 @@ void VpnManager::connectProfile(const QString &id)
     QString tunnelConf = confPath(id);
     // Split tunnel: bring the tunnel up from a Table=off copy so it takes no
     // default route: only the torrent session (bound to the interface) uses it.
-    if (QSettings().value(QStringLiteral("vpnSplitTunnel"), false).toBool()) {
+    // (A SOCKS tunnel never routes anything, so it has nothing to split.)
+    if (!m_tunnel->viaSocks() && QSettings().value(QStringLiteral("vpnSplitTunnel"), false).toBool()) {
         const QString staged = splitConfPath(id);
         QSaveFile sf(staged);
         if (!sf.open(QIODevice::WriteOnly)

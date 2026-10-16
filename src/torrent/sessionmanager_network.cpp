@@ -34,6 +34,10 @@ void SessionManager::setOutgoingInterface(const QString &interfaceName)
     }
     m_killSwitchPaused.clear();
 
+    // The VPN's proxy is reached on 127.0.0.1, which a socket bound to an
+    // adapter cannot do: the choice is kept and applied once it is lifted.
+    if (m_vpnProxyPort > 0) return;
+
     lt::settings_pack pack;
 
     if (interfaceName.isEmpty()) {
@@ -106,7 +110,7 @@ bool SessionManager::autoResumeOnReconnect() const
 
 void SessionManager::checkInterfaceStatus()
 {
-    if (m_outgoingInterface.isEmpty() || !m_killSwitchEnabled)
+    if (m_outgoingInterface.isEmpty() || !m_killSwitchEnabled || m_vpnProxyPort > 0)
         return;
 
     QNetworkInterface ni = QNetworkInterface::interfaceFromName(m_outgoingInterface);
@@ -164,14 +168,42 @@ void SessionManager::setProxySettings(int type, const QString &host, int port,
                                        const QString &user, const QString &pass)
 {
     m_proxy.set(type, host, port, user, pass);
-    m_session.apply_settings(m_proxy.settings(m_anonymousMode));
+    applyProxy();
 }
 
 void SessionManager::setProxyLeakProof(bool enabled)
 {
     m_proxy.setLeakProof(enabled);
     // Re-apply the active proxy so the change takes effect immediately.
-    m_session.apply_settings(m_proxy.settings(m_anonymousMode));
+    applyProxy();
+}
+
+void SessionManager::applyProxy()
+{
+    if (m_vpnProxyPort <= 0) {
+        m_session.apply_settings(m_proxy.settings(m_anonymousMode));
+        return;
+    }
+    // leak-proof always: UPnP, NAT-PMP and LSD would announce the real
+    // address around the tunnel
+    lt::settings_pack pack = bat::buildProxySettings(1, QStringLiteral("127.0.0.1"), m_vpnProxyPort,
+                                                     m_vpnProxyUser, m_vpnProxyPass, true, m_anonymousMode);
+    pack.set_str(lt::settings_pack::outgoing_interfaces, "");
+    m_session.apply_settings(pack);
+}
+
+void SessionManager::setVpnProxy(int port, const QString &user, const QString &pass)
+{
+    const bool was = m_vpnProxyPort > 0;
+    m_vpnProxyPort = qMax(0, port);
+    m_vpnProxyUser = user;
+    m_vpnProxyPass = pass;
+    qInfo().noquote() << "[session] vpn proxy" << (m_vpnProxyPort > 1 ? QStringLiteral("on port %1").arg(m_vpnProxyPort)
+                                                   : m_vpnProxyPort == 1 ? QStringLiteral("holding traffic")
+                                                                         : QStringLiteral("off"));
+    applyProxy();
+    // lifted: the interface the user chose (if any) applies again
+    if (was && m_vpnProxyPort == 0) setOutgoingInterface(m_outgoingInterface);
 }
 
 bool SessionManager::proxyLeakProof() const { return m_proxy.leakProof(); }

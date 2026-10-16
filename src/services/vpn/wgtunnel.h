@@ -17,6 +17,7 @@
 #include <QObject>
 #include <QString>
 #include <QTimer>
+#include <QVariantMap>
 
 class WgTunnel : public QObject
 {
@@ -39,6 +40,10 @@ public:
     // returns whether the tunnel is really still this one. Default: no.
     virtual bool adopt(const QString &confPath, const QString &iface)
     { Q_UNUSED(confPath); Q_UNUSED(iface); return false; }
+    // A tunnel reached through a local SOCKS5 proxy instead of an interface
+    // the session binds to. socks() is {port, user, pass, ip} while it is up.
+    virtual bool viaSocks() const { return false; }
+    virtual QVariantMap socks() const { return {}; }
 
 signals:
     void connected(const QString &ifaceName);

@@ -158,7 +158,9 @@ ColumnLayout {
                           v: page.st === 2 ? i18n.t("vpn_fact_through_vpn") : page.st === 3 ? i18n.t("vpn_fact_blocked") : i18n.t("vpn_fact_real_ip"),
                           ink: page.st === 0 ? Theme.accentText : Theme.t1 },
                         { k: "vpn_fact_iface",
-                          v: page.boundIface ? page.ifaceLabel(page.boundIface)
+                          // the app's own tunnel, while it is up, before any adapter chosen below
+                          v: page.wgState === 2 && vpn.connectedInterface.length > 0 ? vpn.connectedInterface
+                             : page.boundIface ? page.ifaceLabel(page.boundIface)
                              : (page.hasVpn && vpn.connectedInterface.length > 0 ? vpn.connectedInterface
                              : (page.bound.length > 0 ? i18n.t("vpn_fact_iface_gone").arg(page.bound) : i18n.t("settings_iface_any"))),
                           ink: page.st === 3 ? Theme.accentText : Theme.t1 },

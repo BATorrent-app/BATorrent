@@ -5,29 +5,15 @@
 #ifndef SERVICES_VPN_WGTUNNELFACTORY_H
 #define SERVICES_VPN_WGTUNNELFACTORY_H
 
-// Pick the WgTunnel backend for this platform: the real per-OS tunnel where one
-// exists (mac/Windows/Linux), the stub anywhere else.
+// The tunnel backend: the same on every platform, WireGuard in a child process
+// reached over a local SOCKS5 proxy (see wgtunnel_userspace.h). Without batwg
+// beside the app it reports itself as not real and the UI says so.
 
-#include "services/vpn/wgtunnel.h"
-#ifdef Q_OS_MACOS
-#include "services/vpn/wgtunnel_mac.h"
-#elif defined(Q_OS_WIN)
-#include "services/vpn/wgtunnel_win.h"
-#elif defined(Q_OS_LINUX)
-#include "services/vpn/wgtunnel_linux.h"
-#endif
+#include "services/vpn/wgtunnel_userspace.h"
 
 inline WgTunnel *makeWgTunnel(QObject *parent)
 {
-#ifdef Q_OS_MACOS
-    return new MacWgTunnel(parent);
-#elif defined(Q_OS_WIN)
-    return new WinWgTunnel(parent);
-#elif defined(Q_OS_LINUX)
-    return new WgTunnelLinux(parent);
-#else
-    return new StubWgTunnel(parent);
-#endif
+    return new UserspaceWgTunnel(parent);
 }
 
 #endif

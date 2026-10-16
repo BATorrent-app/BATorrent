@@ -60,3 +60,13 @@ ISC License — Copyright (c) 2022 Lucide Contributors
 
 Full licence texts: https://github.com/tabler/tabler-icons/blob/master/LICENSE
 and https://github.com/lucide-icons/lucide/blob/main/LICENSE
+
+## The in-app VPN
+
+`batwg` (`tools/batwg`) is built from **[wireguard-go](https://git.zx2c4.com/wireguard-go)**
+(MIT, © Jason A. Donenfeld and WireGuard LLC), whose userspace network stack is
+**[gVisor](https://github.com/google/gvisor)**'s netstack (Apache License 2.0, © The gVisor
+Authors), with the Go extended libraries `golang.org/x/crypto`, `x/net`, `x/sys` and `x/time`
+(BSD 3-Clause, © The Go Authors) and `github.com/google/btree` (Apache License 2.0). The exact
+versions are pinned in `tools/batwg/go.sum`. "WireGuard" is a registered trademark of Jason A.
+Donenfeld; BATorrent is not affiliated with or endorsed by the WireGuard project.

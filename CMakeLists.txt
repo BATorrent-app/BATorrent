@@ -172,12 +172,8 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/downloads/httpdownloadmanager.cpp
     src/services/downloads/httpmergeengine.cpp
     src/services/vpn/wgtunnel.h            # header-only QObjects — listed so AUTOMOC builds their metaobjects
-    src/services/vpn/wgtunnel_mac.h        # macOS tunnel (compiles empty off macOS)
-    src/services/vpn/wgtunnel_mac.cpp
-    src/services/vpn/wgtunnel_win.h        # Windows tunnel (compiles empty off Windows)
-    src/services/vpn/wgtunnel_win.cpp
-    src/services/vpn/wgtunnel_linux.h      # Linux tunnel (compiles empty off Linux)
-    src/services/vpn/wgtunnel_linux.cpp
+    src/services/vpn/wgtunnel_userspace.h  # WireGuard in a child process (batwg), over local SOCKS5
+    src/services/vpn/wgtunnel_userspace.cpp
     src/services/vpn/vpnmanager.h
     src/services/vpn/vpnmanager.cpp
     src/services/discovery/discoveryservice.cpp
@@ -252,25 +248,28 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
 target_compile_definitions(BATorrent PRIVATE APP_VERSION="${PROJECT_VERSION}")
 target_include_directories(BATorrent PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-# macOS: ship wireguard-go + wg + wg-quick inside the bundle so the integrated
-# VPN needs no `brew install`. They're self-contained (only link libSystem), so
-# a plain copy into Contents/Resources/wireguard is enough. Release/CI signs the
-# bundle (which now includes these) in the codesign step.
-if(APPLE)
-    find_program(WG_QUICK_BIN wg-quick PATHS /opt/homebrew/bin /usr/local/bin)
-    find_program(WG_BIN wg PATHS /opt/homebrew/bin /usr/local/bin)
-    find_program(WIREGUARD_GO_BIN wireguard-go PATHS /opt/homebrew/bin /usr/local/bin)
-    if(WG_QUICK_BIN AND WG_BIN AND WIREGUARD_GO_BIN)
-        add_custom_command(TARGET BATorrent POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E make_directory
-                    "$<TARGET_BUNDLE_CONTENT_DIR:BATorrent>/Resources/wireguard"
-            COMMAND ${CMAKE_COMMAND} -E copy "${WIREGUARD_GO_BIN}" "${WG_BIN}" "${WG_QUICK_BIN}"
-                    "$<TARGET_BUNDLE_CONTENT_DIR:BATorrent>/Resources/wireguard/"
-            COMMENT "Bundling wireguard-go/wg/wg-quick into the app"
-            VERBATIM)
+# The in-app VPN (tools/batwg, WireGuard in its own process over a local
+# SOCKS5 proxy): built with Go when Go is on the PATH, and put beside the app
+# binary, where UserspaceWgTunnel looks for it. No cgo, so no C toolchain.
+find_program(GO_EXECUTABLE go)
+if(GO_EXECUTABLE)
+    if(WIN32)
+        set(BATWG_NAME batwg.exe)
+        set(BATWG_LDFLAGS "-s -w -H=windowsgui")   # no console window
     else()
-        message(STATUS "[BAT] wireguard-tools/wireguard-go not found — integrated VPN will need a system install (install: brew install wireguard-tools wireguard-go)")
+        set(BATWG_NAME batwg)
+        set(BATWG_LDFLAGS "-s -w")
     endif()
+    add_custom_target(batwg ALL
+        COMMAND ${CMAKE_COMMAND} -E env CGO_ENABLED=0
+                ${GO_EXECUTABLE} build -trimpath -mod=readonly -ldflags=${BATWG_LDFLAGS}
+                -o "$<TARGET_FILE_DIR:BATorrent>/${BATWG_NAME}" .
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tools/batwg
+        COMMENT "Building batwg (the in-app VPN)"
+        VERBATIM)
+    add_dependencies(batwg BATorrent)
+else()
+    message(STATUS "[BAT] Go not found: the in-app VPN (tools/batwg) is not built")
 endif()
 
 if(DEFINED ENV{BAT_TMDB_KEY})
@@ -367,8 +366,7 @@ if(WIN32)
     target_compile_definitions(BATorrent PRIVATE _WIN32_WINNT=0x0601 NOMINMAX)
     # shell32/ole32: SHOpenFolderAndSelectItems for "reveal in Explorer"
     # psapi: GetProcessMemoryInfo for the memory guard
-    # iphlpapi: GetIfTable2; verify a WireGuard tunnel actually passes traffic
-    target_link_libraries(BATorrent PRIVATE shell32 ole32 dwmapi psapi dbghelp iphlpapi)
+    target_link_libraries(BATorrent PRIVATE shell32 ole32 dwmapi psapi dbghelp)
     # userenv: AppContainer profiles for the sandboxed media child
     target_sources(BATorrent PRIVATE src/ipc/appcontainer_win.cpp)
     target_link_libraries(BATorrent PRIVATE userenv)
@@ -415,6 +413,9 @@ endif()
 if(UNIX AND NOT APPLE)
     include(GNUInstallDirs)
     install(TARGETS BATorrent RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    if(GO_EXECUTABLE)
+        install(PROGRAMS "$<TARGET_FILE_DIR:BATorrent>/${BATWG_NAME}" DESTINATION ${CMAKE_INSTALL_BINDIR})
+    endif()
 
     # Install the icon at multiple hicolor sizes. Most Linux desktops
     # request small sizes (16, 22, 32) for taskbar / window list and only

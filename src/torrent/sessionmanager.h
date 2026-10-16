@@ -351,6 +351,13 @@ public:
     // broadcasts) + anonymous_mode. The libtorrent 2.0 equivalent of the old
     // force_proxy. Re-applies the current proxy when toggled.
     void setProxyLeakProof(bool enabled);
+    // The in-app VPN: a SOCKS5 proxy on 127.0.0.1 that every peer, tracker
+    // and DHT packet goes through while it is set. Never persisted, and it
+    // overrides (without touching) the user's own proxy. port 0 lifts it;
+    // port 1 is a proxy that is not there, which stops all traffic: the kill
+    // switch while the tunnel is down.
+    void setVpnProxy(int port, const QString &user, const QString &pass);
+    bool vpnProxyActive() const { return m_vpnProxyPort > 0; }
     bool proxyLeakProof() const;
     int proxyType() const;
     QString proxyHost() const;
@@ -686,6 +693,11 @@ private:
 
     // Proxy (SOCKS5/HTTP + leak-proof mode): config + settings-building live here.
     bat::ProxyController m_proxy;
+    int m_vpnProxyPort = 0;
+    QString m_vpnProxyUser;
+    QString m_vpnProxyPass;
+    // the user's proxy, or the VPN's while it is set
+    void applyProxy();
 
     // IP filter
     QString m_ipFilterPath;
