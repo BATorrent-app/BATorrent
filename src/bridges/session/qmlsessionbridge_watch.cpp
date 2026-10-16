@@ -88,11 +88,19 @@ void QmlSessionBridge::pollPendingWatch(bool verbose)
                                                                           StreamGate::headBytes(size));
             const bool tail = size > 0 && m_session->streamContiguousAvailableBytes(idx, file, size - 1, 1) > 0;
             const bool tailNeeded = StreamGate::needsTail(m_session->streamFilePath(idx, file));
-            if (verbose)
+            if (verbose) {
+                const TorrentInfo now = m_session->torrentAt(idx);
                 qInfo().noquote() << "[watch]" << hash.left(8) << "head" << head << "/"
-                                  << StreamGate::headBytes(size) << "tail" << tail << "needed" << tailNeeded;
+                                  << StreamGate::headBytes(size) << "tail" << tail << "needed" << tailNeeded
+                                  << "down" << now.downloadRate / 1024 << "KB/s peers" << now.numPeers
+                                  << "seeds" << now.numSeeds;
+            }
             const TorrentInfo info = m_session->torrentAt(idx);
-            st[QStringLiteral("have")] = head;
+            // what has arrived of the start, partial pieces included: the bar
+            // moves while the first pieces are in flight (the gate still
+            // waits for the start to be contiguous)
+            const qint64 received = m_session->streamFileStats(idx, file).value(QStringLiteral("headReceived")).toLongLong();
+            st[QStringLiteral("have")] = qMax(head, received);
             st[QStringLiteral("need")] = StreamGate::headBytes(size);
             emit waitState(hash, st);
             emit watchProgress(hash, StreamGate::progress(head, size, tail, tailNeeded));

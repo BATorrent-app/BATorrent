@@ -11,6 +11,7 @@
 #include "torrent/streamgate.h"
 
 #include <libtorrent/torrent_info.hpp>
+#include <libtorrent/torrent_status.hpp>
 #include <QDebug>
 #include <QFileInfo>
 #include <QVariantMap>
@@ -78,6 +79,38 @@ QVariantMap SessionManager::streamFileStats(int torrentIndex, int fileIndex) con
     const qint64 done = (fileIndex < static_cast<int>(fp.size())) ? fp[fileIndex] : 0;
     const qint64 buffered = streamContiguousAvailableBytes(torrentIndex, fileIndex, 0, fileSize);
 
+    // How much of the start the player needs has arrived, partial pieces
+    // included: whole pieces count in full, a piece still downloading counts
+    // its finished blocks. The gate waits for the start to be contiguous, so
+    // this is what shows progress while the first pieces are in flight.
+    {
+        const qint64 fileOffset = ti->files().file_offset(lt::file_index_t(fileIndex));
+        const qint64 headEnd = fileOffset + StreamGate::headBytes(fileSize);
+        const int pieceLen = ti->piece_length();
+        const int first = int(fileOffset / pieceLen);
+        const int last = int(std::min<qint64>(headEnd - 1, fileOffset + fileSize - 1) / pieceLen);
+        std::vector<lt::partial_piece_info> queue;
+        h.get_download_queue(queue);
+        qint64 got = 0;
+        for (int p = first; p <= last && p < ti->num_pieces(); ++p) {
+            const qint64 pStart = qint64(p) * pieceLen;
+            const qint64 pEnd = pStart + ti->piece_size(lt::piece_index_t(p));
+            // only the part of the piece that lies inside the file's start
+            const qint64 inHead = std::min(pEnd, headEnd) - std::max(pStart, fileOffset);
+            if (inHead <= 0) continue;
+            if (h.have_piece(lt::piece_index_t(p))) { got += inHead; continue; }
+            for (const auto &pp : queue) {
+                if (int(static_cast<int>(pp.piece_index)) != p) continue;
+                int finished = 0;
+                for (int b = 0; b < pp.blocks_in_piece; ++b)
+                    if (pp.blocks[b].state == lt::block_info::finished) ++finished;
+                const double frac = pp.blocks_in_piece > 0 ? double(finished) / pp.blocks_in_piece : 0.0;
+                got += qint64(frac * double(inHead));
+                break;
+            }
+        }
+        out[QStringLiteral("headReceived")] = got;
+    }
     out[QStringLiteral("totalBytes")]      = fileSize;
     out[QStringLiteral("downloadedBytes")] = done;
     out[QStringLiteral("progress")]        = fileSize > 0 ? double(done) / double(fileSize) : 0.0;
