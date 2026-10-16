@@ -21,6 +21,7 @@
 #include "services/metadata/releasetrust.h"
 #include "services/integrations/rssmanager.h"
 #include "services/discovery/addonmanager.h"
+#include "services/discovery/gamesourcemanager.h"
 #include "services/platform/utils.h"
 #include "services/platform/contentlanguage.h"
 #include "services/platform/translator.h"
@@ -107,6 +108,25 @@ int QmlSearchBridge::pickBestResult() const
 int QmlSearchBridge::compareBuildVersions(const QString &a, const QString &b) const
 {
     return GameReleasePick::compareVersions(a, b);
+}
+
+QVariantMap QmlSearchBridge::newerBuild(const QString &title, const QString &installedRelease) const
+{
+    const QString have = GameReleasePick::parseVersion(installedRelease);
+    if (have.isEmpty() || title.trimmed().isEmpty()) return {};
+    const QString want = NameParser::parse(title).cleanTitle;
+    QVariantMap best;
+    QString bestVersion = have;
+    for (const GameDownload &g : GameSourceManager::instance().search(title, 60)) {
+        // the same game, not a sequel or a soundtrack that shares words with it
+        if (NameParser::parse(g.cleanTitle).cleanTitle.compare(want, Qt::CaseInsensitive) != 0) continue;
+        const QString v = GameReleasePick::parseVersion(g.title);
+        if (v.isEmpty() || GameReleasePick::compareVersions(v, bestVersion) <= 0) continue;
+        bestVersion = v;
+        best = { { QStringLiteral("version"), v }, { QStringLiteral("size"), g.fileSize },
+                 { QStringLiteral("name"), g.title } };
+    }
+    return best;
 }
 
 int QmlSearchBridge::compareGameReleases(const QVariantMap &a, const QVariantMap &b) const

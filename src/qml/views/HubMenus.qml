@@ -45,10 +45,19 @@ Item {
         property string hash: ""
         // Its torrent is gone and it stays as an installed game: nothing to install.
         property bool torrentless: false
-        function openFor(h) { hash = h; torrentless = !!page.api && page.api.gameTorrentless(h); width = 260; popup() }
-        function dropFrom(h, anchorItem) {
+        // the game's own uninstaller and what it frees, when Windows lists one
+        property var uninstaller: ({})
+        property string gameTitle: ""
+        function refresh(h) {
             hash = h
             torrentless = !!page.api && page.api.gameTorrentless(h)
+            uninstaller = page.api ? page.api.gameUninstaller(h) : ({})
+            var g = (page.gameItems || []).filter(function (x) { return x.infoHash === h })[0]
+            gameTitle = g ? g.title : ""
+        }
+        function openFor(h) { refresh(h); width = 260; popup() }
+        function dropFrom(h, anchorItem) {
+            refresh(h)
             width = Math.max(260, anchorItem.width)
             popup(anchorItem, 0, anchorItem.height + 6)
         }
@@ -80,6 +89,19 @@ Item {
             iconSrc: "qrc:/icons/file.svg"
             onTriggered: page.openExePicker(gameMenu.hash, false)
         }
+        GameItem {
+            text: (i18n.language, i18n.t("game_args_item"))
+            iconSrc: "qrc:/icons/settings.svg"
+            onTriggered: page.gameActionRequested("args", gameMenu.hash, gameMenu.gameTitle)
+        }
+        // the download checked against itself: broken pieces fetched again
+        GameItem {
+            text: (i18n.language, i18n.t("game_verify_item"))
+            iconSrc: "qrc:/icons/shield-check.svg"
+            enabled: !gameMenu.torrentless
+            hideWhenDisabled: true
+            onTriggered: if (page.api) page.api.recheckGame(gameMenu.hash)
+        }
         MenuSeparator {
             topPadding: 4
             bottomPadding: 4
@@ -89,6 +111,14 @@ Item {
             text: (i18n.language, i18n.t("hub_open_folder"))
             iconSrc: "qrc:/icons/folder-open.svg"
             onTriggered: if (page.api) Qt.openUrlExternally(page.fileUrl(page.api.gameFolder(gameMenu.hash)))
+        }
+        GameItem {
+            text: (i18n.language, gameMenu.uninstaller.size
+                   ? i18n.t("game_uninstall_item").arg(gameMenu.uninstaller.size) : i18n.t("game_uninstall_item_plain"))
+            iconSrc: "qrc:/icons/trash.svg"
+            enabled: !!gameMenu.uninstaller.exe
+            hideWhenDisabled: true
+            onTriggered: page.gameActionRequested("uninstall", gameMenu.hash, gameMenu.gameTitle)
         }
         GameItem {
             text: (i18n.language, i18n.t("hub_forget_game"))

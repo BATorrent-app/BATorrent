@@ -15,6 +15,10 @@ Item {
     signal openSearch(string query)
     // A title's page in Find: where a series opens, and every recommendation.
     signal openTitle(var work)
+    // a game's torrent files (its languages and extras), in Downloads
+    signal torrentFilesRequested(string hash)
+    // launch options, or running the game's uninstaller: "args" | "uninstall"
+    signal gameActionRequested(string kind, string hash, string title)
     property var api: typeof session !== "undefined" ? session : null
     property var library: []
     property var gameItems: []

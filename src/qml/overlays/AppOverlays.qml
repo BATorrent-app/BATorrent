@@ -23,6 +23,7 @@ Item {
     property alias addDlg: addDlg
     property alias addTorrentDlg: addDlg
     property alias removeDlg: removeDlg
+    property alias gameActionDlg: gameActionDlg
     property alias makeRoomPanel: makeRoomPanel
     property alias inputPrompt: inputPrompt
     property alias updateDlg: updateDlg
@@ -114,6 +115,7 @@ Item {
         target: typeof session !== "undefined" ? session : null
         function onOpenTorrentRequested(path) { root.enqueueTorrentUrls([path]) }
     }
+    GameActionDialog { id: gameActionDlg }
     RemoveDialog {
         id: removeDlg
         onAccepted: function (choice) {

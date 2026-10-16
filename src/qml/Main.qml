@@ -847,6 +847,8 @@ Window {
                     id: hubPage; Layout.fillWidth: true; Layout.fillHeight: true
                     onOpenSearch: function(q) { win.openSearch(q) }
                     onOpenTitle: function (work) { win.currentPage = 1; searchPage.openTitle(work, 2) }
+                    onTorrentFilesRequested: function (hash) { win.currentPage = 0; win.selectTorrentByHash(hash); win.detailTab = 2 }
+                    onGameActionRequested: function (kind, hash, title) { overlays.gameActionDlg.openFor(kind, hash, title) }
                     onReturnTo: function (page) { win.currentPage = page }
                 }
                 // ----- page 3: Settings (fullscreen tab, was a top-level window) -----

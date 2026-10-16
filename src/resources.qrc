@@ -187,6 +187,7 @@
         <file>../src/qml/dialogs/InputPromptDialog.qml</file>
 <file>../src/qml/dialogs/BatDialog.qml</file>
 <file>../src/qml/dialogs/RemoveDialog.qml</file>
+<file>../src/qml/dialogs/GameActionDialog.qml</file>
 <file>../src/qml/dialogs/MediaGuardDialog.qml</file>
 <file>../src/qml/dialogs/FileTreeCompute.qml</file>
 <file>../src/qml/dialogs/AddDownloadDialog.qml</file>

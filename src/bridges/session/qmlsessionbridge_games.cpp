@@ -128,6 +128,7 @@ QVariantList QmlSessionBridge::gameLibrary() const
         m["launches"]   = played.launches;
         m["playing"]    = m_runningGames.contains(hash);
         m["group"]      = ReleaseGroup::detect(info.name);
+        m["release"]    = info.name;   // the build it came from, for "a newer build is out"
         m["installState"] = gameInstallState(hash, GameExeDetect::dataComplete(info.completed, info.progress));
         m["extractProgress"] = m_extractProgress.value(hash, -1);   // 0-100 while unpacking, else -1
         m["installProgress"] = m_installProgress.value(hash, -1);   // 0-99 during a silent install, else -1
@@ -182,6 +183,7 @@ QVariantList QmlSessionBridge::gameLibrary() const
         m["launches"] = played.launches;
         m["playing"] = m_runningGames.contains(hash);
         m["group"] = ReleaseGroup::detect(name);
+        m["release"] = name;
         m["installState"] = gameInstallState(hash, true);
         m["extractProgress"] = -1;
         m["installProgress"] = -1;
@@ -431,7 +433,7 @@ void QmlSessionBridge::restoreRunningGames()
 // mac games are .app bundles (directories): QProcess can't exec those, but
 // `open -W` can, and it stays alive until the game quits so playtime tracking
 // via the pid still works.
-static bool startGameProcess(const QString &exe, qint64 *pid, QString *why)
+static bool startGameProcess(const QString &exe, const QString &args, qint64 *pid, QString *why)
 {
 #if defined(Q_OS_MACOS)
     if (exe.endsWith(QStringLiteral(".app"), Qt::CaseInsensitive) && QFileInfo(exe).isDir())
@@ -440,6 +442,7 @@ static bool startGameProcess(const QString &exe, qint64 *pid, QString *why)
 #endif
     QProcess proc;
     proc.setProgram(exe);
+    proc.setArguments(QProcess::splitCommand(args));   // the page's Launch options
     proc.setWorkingDirectory(QFileInfo(exe).absolutePath());
     if (proc.startDetached(pid))
         return true;
@@ -451,7 +454,8 @@ static bool startGameProcess(const QString &exe, qint64 *pid, QString *why)
     const QString wd = QFileInfo(exe).absolutePath();
     const auto r = reinterpret_cast<INT_PTR>(
         ShellExecuteW(nullptr, L"open",
-                      reinterpret_cast<const wchar_t *>(exe.utf16()), nullptr,
+                      reinterpret_cast<const wchar_t *>(exe.utf16()),
+                      args.isEmpty() ? nullptr : reinterpret_cast<const wchar_t *>(args.utf16()),
                       reinterpret_cast<const wchar_t *>(wd.utf16()), SW_SHOWNORMAL));
     if (r <= 32) *why += QStringLiteral("; ShellExecute error %1").arg(qint64(r));
     return r > 32;
@@ -491,7 +495,7 @@ void QmlSessionBridge::launchGame(const QString &infoHash)
         QString why;
         // Detached so the game survives BATorrent closing; the returned pid lets
         // us poll for exit and credit playtime.
-        if (startGameProcess(exe, &pid, &why)) {
+        if (startGameProcess(exe, gameLaunchArgs(infoHash), &pid, &why)) {
             qInfo().noquote() << "[game] launched" << exe << "pid" << pid
                               << (isInstaller ? "(installer)" : "");
             const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();

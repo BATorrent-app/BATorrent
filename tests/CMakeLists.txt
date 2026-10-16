@@ -129,6 +129,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_add.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_addwindow.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_freeup.cpp
+    ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_gamepage.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_details.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_create.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/session/qmlsessionbridge_games.cpp

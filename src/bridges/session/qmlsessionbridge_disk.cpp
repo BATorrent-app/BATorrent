@@ -100,9 +100,17 @@ QVariantList QmlSessionBridge::diskVolumes() const
 {
     static QVariantList cached;
     static qint64 lastCheck = 0;
+    // The category paths come from the engine over a synchronous call that
+    // runs the event loop; a stats tick arriving meanwhile re-evaluates the
+    // bindings reading this, which landed back here (QML: "binding loop").
+    // While it is being worked out, the last answer stands.
+    static bool computing = false;
+    if (computing) return cached;
     const qint64 now = QDateTime::currentSecsSinceEpoch();
     if (lastCheck != 0 && now - lastCheck < 10) return cached;
     lastCheck = now;
+    computing = true;
+    struct Done { ~Done() { computing = false; } } done;
 
     QList<QStorageInfo> vols = QStorageInfo::mountedVolumes();
     QStringList paths;

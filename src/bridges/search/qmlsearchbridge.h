@@ -124,6 +124,9 @@ public:
     // Build-version order alone, for the explicit "newest version" sort. Shares
     // GameReleasePick's parser so the list can't disagree with "Get the best".
     Q_INVOKABLE int compareBuildVersions(const QString &a, const QString &b) const;
+    // A game's newer build in the game catalogs: {version, size, name}, {}
+    // when the installed release has no version to compare or none is newer.
+    Q_INVOKABLE QVariantMap newerBuild(const QString &title, const QString &installedRelease) const;
 
     // Hydra-format game catalogs the user adds (neutral infra: nothing bundled).
     Q_INVOKABLE QVariantList gameSources() const;          // [{name, url}]

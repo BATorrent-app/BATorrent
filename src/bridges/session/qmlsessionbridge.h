@@ -350,6 +350,19 @@ public:
     // list: {size, peers} for the game page's card; {} when there is none, or
     // when the person chose to keep them (keepSetupFiles).
     Q_INVOKABLE QVariantMap setupFilesOf(const QString &infoHash) const;
+    // The game page's right column (qmlsessionbridge_gamepage.cpp):
+    // where the saves are {path, count, lastMs}, and a dated copy of them
+    Q_INVOKABLE QVariantMap gameSaves(const QString &infoHash) const;
+    Q_INVOKABLE QString backUpSaves(const QString &infoHash, const QString &title);
+    Q_INVOKABLE void openPath(const QString &path);
+    // the repack's languages and extras {languages, extras: [{name, on}]}
+    Q_INVOKABLE QVariantMap gameExtras(const QString &infoHash) const;
+    // the Play menu: check the files, launch options, the game's own uninstaller {exe, size}
+    Q_INVOKABLE void recheckGame(const QString &infoHash);
+    Q_INVOKABLE QString gameLaunchArgs(const QString &infoHash) const;
+    Q_INVOKABLE void setGameLaunchArgs(const QString &infoHash, const QString &args);
+    Q_INVOKABLE QVariantMap gameUninstaller(const QString &infoHash);
+    Q_INVOKABLE bool runUninstaller(const QString &infoHash);
     Q_INVOKABLE void keepSetupFiles(const QString &infoHash);
     Q_INVOKABLE QString gameFolder(const QString &infoHash) const;     // for the picker's start dir
     Q_INVOKABLE void launchGame(const QString &infoHash);              // run saved exe, else open folder
@@ -631,6 +644,8 @@ private:
     QHash<QString, QString> m_achTitle;        // infoHash → the title to name in the notice
     QHash<QString, QStringList> m_achAnnounce; // infoHash → unlocks waiting for their names
     QString achievementDir(const QString &infoHash) const;
+    QString saveFolderOf(const QString &infoHash) const;
+    QHash<QString, QVariantMap> m_uninstallCache;   // infoHash → gameUninstaller(), walked once
     void onAchievementsLookedUp(const QString &key, int appId, const QVariantList &list);
     void startAchievementWatch(const QString &infoHash);
     void stopAchievementWatch(const QString &infoHash);
