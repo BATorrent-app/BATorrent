@@ -151,13 +151,6 @@ Item {
                 on: !!more.pw && more.pw.stayOnTop
                 onToggled: more.pw.toggleOnTop()
             }
-            SwitchRow {
-                icon: "qrc:/icons/pip.svg"
-                label: (i18n.language, i18n.t("player_pip"))
-                keyHint: "P"
-                on: !!more.pw && more.pw.pipMode
-                onToggled: { more.closePanel(); more.pw.togglePip() }
-            }
 
             Rectangle { Layout.fillWidth: true; Layout.topMargin: 4; Layout.preferredHeight: 1; color: Theme.hairSoft }
 

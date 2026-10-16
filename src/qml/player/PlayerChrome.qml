@@ -433,6 +433,13 @@ Item {
                     }
                 }
                 CtlBtn { icon: "qrc:/icons/ellipsis.svg"; s: 18; tip: (i18n.language, i18n.t("ctx_grp_more")); onClicked: if (overflowMenu) overflowMenu.popup() }
+                // picture in picture beside full screen: the two ways to size the video
+                CtlBtn {
+                    icon: "qrc:/icons/pip.svg"; s: 18
+                    on: !!pw && pw.pipMode
+                    tip: (i18n.language, i18n.t("player_pip")) + "  (P)"
+                    onClicked: if (pw) pw.togglePip()
+                }
                 CtlBtn { icon: "qrc:/icons/maximize.svg"; s: 18; tip: (i18n.language, i18n.t("player_fullscreen")); onClicked: if (pw) pw.toggleFullscreen() }
             }
         }
