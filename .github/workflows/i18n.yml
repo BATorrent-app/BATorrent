@@ -33,6 +33,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: i18n parity + duplicates + key usage
         run: python3 scripts/check-i18n-parity.py
