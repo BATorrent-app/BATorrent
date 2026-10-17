@@ -10,6 +10,7 @@
 #include "torrent/ipblocklist.h"
 
 #include <libtorrent/settings_pack.hpp>
+#include <libtorrent/version.hpp>
 #include <libtorrent/ip_filter.hpp>
 #include <libtorrent/torrent_flags.hpp>
 #include <QSettings>
@@ -18,6 +19,18 @@
 #include <QFile>
 #include <QString>
 #include <QDebug>
+
+// The port told to trackers and the DHT instead of the listen port (the VPN's
+// forwarded one). announce_port came in libtorrent 2.0.11; the app ships the
+// fork, which has it, but the CI test builds use the distro's older one.
+static void setAnnouncePort(lt::settings_pack &pack, int port)
+{
+#if LIBTORRENT_VERSION_NUM >= 20011
+    pack.set_int(lt::settings_pack::announce_port, port);
+#else
+    Q_UNUSED(pack); Q_UNUSED(port);
+#endif
+}
 
 // --- VPN / Interface binding ---
 
@@ -182,7 +195,7 @@ void SessionManager::applyProxy()
 {
     if (m_vpnProxyPort <= 0) {
         lt::settings_pack pack = m_proxy.settings(m_anonymousMode);
-        pack.set_int(lt::settings_pack::announce_port, 0);
+        setAnnouncePort(pack, 0);
         m_session.apply_settings(pack);
         return;
     }
@@ -191,7 +204,7 @@ void SessionManager::applyProxy()
     lt::settings_pack pack = bat::buildProxySettings(1, QStringLiteral("127.0.0.1"), m_vpnProxyPort,
                                                      m_vpnProxyUser, m_vpnProxyPass, true, m_anonymousMode);
     pack.set_str(lt::settings_pack::outgoing_interfaces, "");
-    pack.set_int(lt::settings_pack::announce_port, m_vpnAnnouncePort);
+    setAnnouncePort(pack, m_vpnAnnouncePort);
     m_session.apply_settings(pack);
 }
 
@@ -203,7 +216,7 @@ void SessionManager::setVpnAnnouncePort(int port)
     if (m_vpnProxyPort <= 1) return;   // applied with the proxy when it comes
     qInfo() << "[session] vpn forwarded port" << port;
     lt::settings_pack pack;
-    pack.set_int(lt::settings_pack::announce_port, port);
+    setAnnouncePort(pack, port);
     m_session.apply_settings(pack);
     // tell the trackers and the DHT now, not at the next interval
     for (auto &h : m_torrents) {
