@@ -5,7 +5,8 @@
 #ifndef BATORRENT_LOGGER_H
 #define BATORRENT_LOGGER_H
 
-#include <QFile>
+#include "services/platform/appendfile.h"
+
 #include <QMutex>
 #include <QString>
 
@@ -60,8 +61,10 @@ private:
     Logger() = default;
     void rotateIfNeeded();
     void writeLine(Level l, const QString &msg);
+    void openLog();
 
-    QFile m_file;
+    AppendFile m_file;
+    qint64 m_lastPathCheck = 0;   // ms; when a child last looked for a rotation
     QMutex m_mutex;
     Level m_level = Info;
     qint64 m_maxBytes = 5 * 1024 * 1024;  // 5 MB per file

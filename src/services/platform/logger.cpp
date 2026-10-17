@@ -4,11 +4,13 @@
 
 #include "services/platform/logger.h"
 #include <QDateTime>
+#include <QElapsedTimer>
+#include <QFileInfo>
 #include <QDir>
 #include <QMutexLocker>
 #include <QSettings>
 #include <QStandardPaths>
-#include <QTextStream>
+#include <QFile>
 
 Logger &Logger::instance()
 {
@@ -46,8 +48,7 @@ void Logger::init(bool ownsSession)
     QDir dir(logsDir());
     if (!dir.exists()) dir.mkpath(".");
 
-    m_file.setFileName(currentLogPath());
-    (void)m_file.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text);
+    openLog();
 
     if (!ownsSession) return;
 
@@ -83,17 +84,39 @@ void Logger::log(Level l, const QString &msg)
     writeLine(l, msg);
 }
 
+void Logger::openLog()
+{
+    (void)m_file.open(currentLogPath());
+}
+
 void Logger::writeLine(Level l, const QString &msg)
 {
     if (!m_file.isOpen()) return;
     const QString ts = QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs);
-    QTextStream ts_out(&m_file);
-    ts_out << ts << " [" << levelName(l) << "] " << msg << '\n';
-    m_file.flush();
+#ifdef Q_OS_WIN
+    const char *eol = "\r\n";
+#else
+    const char *eol = "\n";
+#endif
+    // the whole line in one write: see AppendFile
+    m_file.append((ts + QStringLiteral(" [") + levelName(l) + QStringLiteral("] ") + msg).toUtf8() + eol);
 }
 
 void Logger::rotateIfNeeded()
 {
+    // Only the app's process rotates. A child (engine, media) keeps a handle
+    // that follows the file when it is renamed or deleted, so it looks now
+    // and then whether the file at the path is a different one, and moves to
+    // it: otherwise its lines would go on into batorrent.log.1, or nowhere.
+    if (!m_ownsSession) {
+        static QElapsedTimer clock;
+        if (!clock.isValid()) clock.start();
+        if (clock.elapsed() - m_lastPathCheck < 2000) return;
+        m_lastPathCheck = clock.elapsed();
+        const QFileInfo at(currentLogPath());
+        if (!at.exists() || at.size() < m_file.size()) openLog();
+        return;
+    }
     if (m_file.size() < m_maxBytes) return;
     m_file.close();
     QDir dir(logsDir());
@@ -106,8 +129,7 @@ void Logger::rotateIfNeeded()
     }
     if (dir.exists("batorrent.log"))
         dir.rename("batorrent.log", "batorrent.log.1");
-    m_file.setFileName(currentLogPath());
-    (void)m_file.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text);
+    openLog();
 }
 
 QString Logger::logsDir() const
@@ -144,8 +166,7 @@ void Logger::clear()
     QMutexLocker lock(&m_mutex);
     m_file.close();
     QFile::remove(currentLogPath());
-    m_file.setFileName(currentLogPath());
-    (void)m_file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text);
+    openLog();
     writeLine(Info, QStringLiteral("--- log cleared by user ---"));
 }
 

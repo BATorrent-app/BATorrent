@@ -137,6 +137,7 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/integrations/gameexedetect.cpp
     src/services/security/defender.cpp
     src/services/platform/logger.cpp
+    src/services/platform/appendfile.cpp
     src/services/security/crashhandler.cpp
     src/services/integrations/notifier.cpp
     src/services/platform/qrcodegen.cpp

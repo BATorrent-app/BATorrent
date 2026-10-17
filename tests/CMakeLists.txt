@@ -103,6 +103,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/discovery/addoncatalog.cpp
     ${CMAKE_SOURCE_DIR}/src/services/integrations/updater.cpp
     ${CMAKE_SOURCE_DIR}/src/services/platform/logger.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/platform/appendfile.cpp
     ${CMAKE_SOURCE_DIR}/src/services/metadata/audiomode.cpp
     ${CMAKE_SOURCE_DIR}/src/services/metadata/episodegroup.cpp
     ${CMAKE_SOURCE_DIR}/src/services/metadata/filegroups.cpp
