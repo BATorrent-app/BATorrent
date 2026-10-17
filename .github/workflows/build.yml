@@ -121,13 +121,13 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive   # the vendored libtorrent fork
       # batwg (the in-app VPN) is Go; the runners do not all have it on PATH
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: tools/batwg/go.mod
           cache-dependency-path: tools/batwg/go.sum
-        with:
-          submodules: recursive   # the vendored libtorrent fork
 
       # Apply our engine patches (third_party/patches/) onto the submodule.
       - name: Apply fork patches
@@ -269,13 +269,13 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive   # the vendored libtorrent fork
       # batwg (the in-app VPN) is Go; the runners do not all have it on PATH
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: tools/batwg/go.mod
           cache-dependency-path: tools/batwg/go.sum
-        with:
-          submodules: recursive   # the vendored libtorrent fork
 
       # Apply our engine patches (third_party/patches/) onto the submodule.
       # git-bash ships on windows-latest, so the same shell script works here.
@@ -576,13 +576,13 @@ jobs:
     runs-on: macos-14
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive   # the vendored libtorrent fork
       # batwg (the in-app VPN) is Go; the runners do not all have it on PATH
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: tools/batwg/go.mod
           cache-dependency-path: tools/batwg/go.sum
-        with:
-          submodules: recursive   # the vendored libtorrent fork
 
       # Apply our engine patches (third_party/patches/) onto the submodule.
       - name: Apply fork patches
