@@ -195,6 +195,7 @@ void SessionManager::applyProxy()
 void SessionManager::setVpnProxy(int port, const QString &user, const QString &pass)
 {
     const bool was = m_vpnProxyPort > 0;
+    const int before = m_vpnProxyPort;
     m_vpnProxyPort = qMax(0, port);
     m_vpnProxyUser = user;
     m_vpnProxyPass = pass;
@@ -202,6 +203,15 @@ void SessionManager::setVpnProxy(int port, const QString &user, const QString &p
                                                    : m_vpnProxyPort == 1 ? QStringLiteral("holding traffic")
                                                                          : QStringLiteral("off"));
     applyProxy();
+    // A new proxy only applies to new connections: peers already connected
+    // around it (while the VPN was off, or before it came up) would carry on
+    // over the real address. Pausing the session drops every connection and
+    // resuming it reconnects through the proxy; each torrent keeps its own
+    // paused or running state.
+    if (m_vpnProxyPort > 0 && m_vpnProxyPort != before) {
+        m_session.pause();
+        m_session.resume();
+    }
     // lifted: the interface the user chose (if any) applies again
     if (was && m_vpnProxyPort == 0) setOutgoingInterface(m_outgoingInterface);
 }
