@@ -31,6 +31,7 @@ public:
     bool isReal() const override { return !helperPath().isEmpty(); }
     bool viaSocks() const override { return true; }
     QVariantMap socks() const override;
+    bool failureIsFinal() const override { return m_final; }
 
     // batwg(.exe) beside the app, or empty when it was not shipped.
     static QString helperPath();
@@ -46,6 +47,8 @@ private:
     bool m_ready = false;
     bool m_stopping = false;
     QString m_error;      // the last error batwg reported, before it exited
+    bool m_final = false; // ...and trying again would not help
+    int m_fwd = 0;
     int m_port = 0;
     QString m_user;
     QString m_pass;

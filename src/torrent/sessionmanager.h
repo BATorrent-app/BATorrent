@@ -358,6 +358,10 @@ public:
     // switch while the tunnel is down.
     void setVpnProxy(int port, const QString &user, const QString &pass);
     bool vpnProxyActive() const { return m_vpnProxyPort > 0; }
+    // The port the VPN forwards to us: announced to trackers and the DHT in
+    // place of the listen port while the VPN proxy is set, so peers reach
+    // in through the VPN (over uTP: libtorrent takes no TCP through a proxy).
+    void setVpnAnnouncePort(int port);
     bool proxyLeakProof() const;
     int proxyType() const;
     QString proxyHost() const;
@@ -694,6 +698,7 @@ private:
     // Proxy (SOCKS5/HTTP + leak-proof mode): config + settings-building live here.
     bat::ProxyController m_proxy;
     int m_vpnProxyPort = 0;
+    int m_vpnAnnouncePort = 0;
     QString m_vpnProxyUser;
     QString m_vpnProxyPass;
     // the user's proxy, or the VPN's while it is set

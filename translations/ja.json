@@ -1003,8 +1003,6 @@
   "set_verbose_note": "libtorrent イベントの詳細を追加で記録します。バグ報告時に使用し、その後は無効化してください。",
   "set_vpn_autoconnect": "起動時に接続",
   "set_vpn_autoconnect_note": "BATorrent の起動時に最後に使用したプロファイルへ再接続します（管理者権限を求めます）。",
-  "set_vpn_split": "スプリットトンネル",
-  "set_vpn_split_note": "BATorrent の通信だけが VPN を使い、それ以外は通常の接続のままです。トラッカーの名前解決はシステム DNS を使用します。次回の接続から適用されます。",
   "set_warn_suspicious": "不審なファイルを警告する",
   "set_warn_suspicious_note": "メディアのトレントが実行ファイルを隠している場合に警告します（例: movie.mp4.exe）。ローカル確認のみ — アップロードも削除も行いません。",
   "set_watched_folder2": "監視フォルダー",
@@ -2092,5 +2090,7 @@
   "game_uninstall_title": "%1 をアンインストールしますか？",
   "game_uninstall_body": "ゲーム付属のアンインストーラーを実行し、%1 を解放します。セーブデータはそのまま残ります。",
   "game_uninstall_body_nosize": "ゲーム付属のアンインストーラーを実行します。セーブデータはそのまま残ります。",
-  "game_uninstall_btn": "アンインストール"
+  "game_uninstall_btn": "アンインストール",
+  "vpn_retry_in": "%1 秒後に再試行します。",
+  "vpn_port_open": "ポート %1 をピアに開放中"
 }

@@ -53,6 +53,7 @@ bool SessionManager::applySetting(const QString &key, const QVariant &v)
     else if (key == "proxyUser")           setProxySettings(proxyType(), proxyHost(), proxyPort(), v.toString(), proxyPass());
     else if (key == "proxyPass")           setProxySettings(proxyType(), proxyHost(), proxyPort(), proxyUser(), v.toString());
     else if (key == "proxyLeakProof")      setProxyLeakProof(v.toBool());
+    else if (key == "vpnAnnouncePort")     setVpnAnnouncePort(v.toInt());
     else if (key == "vpnProxy") {
         const QVariantMap m = v.toMap();
         setVpnProxy(m.value(QStringLiteral("port")).toInt(), m.value(QStringLiteral("user")).toString(),

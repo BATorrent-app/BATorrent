@@ -13,6 +13,7 @@
 // exits. Events go to stdout, one JSON object per line:
 //
 //	{"ev":"ready","port":N,"user":"…","pass":"…","ip":"10.2.0.2"}
+//	{"ev":"fwd","port":N}   the port the VPN forwards to us (0: lost)
 //	{"ev":"stats","rx":N,"tx":N,"handshake":unix}
 //	{"ev":"stale"} / {"ev":"alive"}   the server stopped / started answering
 //	{"ev":"error","code":"conf|server|handshake|traffic|socks","msg":"…"}
@@ -68,12 +69,12 @@ func (a tunnelAdapter) DialContext(ctx context.Context, network, address string)
 func (a tunnelAdapter) LookupContextHost(ctx context.Context, host string) ([]string, error) {
 	return a.t.tnet.LookupContextHost(ctx, host)
 }
-func (a tunnelAdapter) listenUDP(v6 bool) (net.PacketConn, error) {
+func (a tunnelAdapter) listenUDP(v6 bool, port uint16) (net.PacketConn, error) {
 	addr := a.t.v4
 	if v6 {
 		addr = a.t.v6
 	}
-	return a.t.tnet.ListenUDPAddrPort(netip.AddrPortFrom(addr, 0))
+	return a.t.tnet.ListenUDPAddrPort(netip.AddrPortFrom(addr, port))
 }
 func (a tunnelAdapter) hasV4() bool { return a.t.v4.IsValid() }
 func (a tunnelAdapter) hasV6() bool { return a.t.v6.IsValid() }
@@ -166,6 +167,22 @@ func main() {
 
 	// stdin closing is the app saying goodbye, however it went
 	gone := make(chan struct{})
+	// A forwarded port, when the server offers one (Proton's paid servers
+	// do; others do not answer and nothing changes). Asked after "ready" so a
+	// server without it does not slow the connection down; the UDP side moves
+	// onto the port when it arrives.
+	go func() {
+		pf, fwd := startPortForward(t, c)
+		if pf == nil {
+			return
+		}
+		srv.fwd.Store(uint32(fwd))
+		emit(map[string]any{"ev": "fwd", "port": fwd})
+		pf.keep(fwd, func(p uint16) {
+			srv.fwd.Store(uint32(p))
+			emit(map[string]any{"ev": "fwd", "port": p})
+		}, gone)
+	}()
 	go func() {
 		for in.Scan() {
 		}

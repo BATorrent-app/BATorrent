@@ -1003,8 +1003,6 @@
   "set_verbose_note": "捕获 libtorrent 事件的额外细节。报告 bug 时使用，之后关闭。",
   "set_vpn_autoconnect": "启动时连接",
   "set_vpn_autoconnect_note": "BATorrent 启动时自动重连上次使用的配置文件（会请求管理员权限）。",
-  "set_vpn_split": "分流隧道",
-  "set_vpn_split_note": "只有 BATorrent 的流量走 VPN，系统其余流量保持普通连接。Tracker 域名解析使用系统 DNS。下次连接时生效。",
   "set_warn_suspicious": "警告可疑文件",
   "set_warn_suspicious_note": "当媒体种子隐藏可执行文件（如 movie.mp4.exe）时显示警告。仅本地检查——不上传、不删除任何文件。",
   "set_watched_folder2": "监视文件夹",
@@ -2092,5 +2090,7 @@
   "game_uninstall_title": "卸载 %1？",
   "game_uninstall_body": "运行游戏自带的卸载程序，释放 %1。你的存档会保留在原处。",
   "game_uninstall_body_nosize": "运行游戏自带的卸载程序。你的存档会保留在原处。",
-  "game_uninstall_btn": "卸载"
+  "game_uninstall_btn": "卸载",
+  "vpn_retry_in": "%1 秒后重试。",
+  "vpn_port_open": "端口 %1 已对节点开放"
 }

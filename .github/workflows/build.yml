@@ -28,6 +28,7 @@ on:
       - 'cmake/**'
       - 'scripts/**'
       - 'third_party/**'
+      - 'tools/**'
       - '.github/workflows/build.yml'
       - '.github/workflows/qml-smoke.yml'
 

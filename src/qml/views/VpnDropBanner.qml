@@ -37,7 +37,8 @@ Rectangle {
             color: Theme.t2
             font.pixelSize: 13; font.family: Theme.fontSans
             text: (i18n.language, "<b><font color='" + Theme.t1 + "'>" + i18n.t(band.killSwitch ? "vpn_dropped_stopped" : "vpn_dropped_open") + "</font></b> "
-                  + i18n.t(band.killSwitch ? "vpn_dropped_stopped_d" : "vpn_dropped_open_d"))
+                  + i18n.t(band.killSwitch ? "vpn_dropped_stopped_d" : "vpn_dropped_open_d")
+                  + (band.hasVpn && vpn.retryIn > 0 ? " " + i18n.t("vpn_retry_in").arg(vpn.retryIn) : ""))
         }
         LightBtn {
             text: (i18n.language, i18n.t("vpn_reconnect"))

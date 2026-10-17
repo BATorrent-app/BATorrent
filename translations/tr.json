@@ -1003,8 +1003,6 @@
   "set_verbose_note": "libtorrent olaylarıyla ilgili ek ayrıntıları yakalar. Bir hata bildirirken kullanın; sonrasında kapatın.",
   "set_vpn_autoconnect": "Başlangıçta bağlan",
   "set_vpn_autoconnect_note": "BATorrent açıldığında son kullanılan profile yeniden bağlanır (yönetici izni ister).",
-  "set_vpn_split": "Bölünmüş tünel",
-  "set_vpn_split_note": "Yalnızca BATorrent trafiği VPN'i kullanır — sistemin geri kalanı normal bağlantıda kalır. Tracker ad çözümlemesi sistem DNS'ini kullanır. Bir sonraki bağlantıda geçerli olur.",
   "set_warn_suspicious": "Şüpheli dosyalar hakkında uyar",
   "set_warn_suspicious_note": "İndirilen bir medya torrent'i bir yürütülebilir dosya gizlediğinde uyarı gösterir (ör. movie.mp4.exe). Yalnızca yerel kontrol — hiçbir dosya yüklenmez ve hiçbir şey silinmez.",
   "set_watched_folder2": "İzlenen klasör",
@@ -2092,5 +2090,7 @@
   "game_uninstall_title": "%1 kaldırılsın mı?",
   "game_uninstall_body": "Oyunun kendi kaldırıcısını çalıştırır, %1 boşaltır. Kayıtların yerinde kalır.",
   "game_uninstall_body_nosize": "Oyunun kendi kaldırıcısını çalıştırır. Kayıtların yerinde kalır.",
-  "game_uninstall_btn": "Kaldır"
+  "game_uninstall_btn": "Kaldır",
+  "vpn_retry_in": "%1 sn sonra yeniden denenecek.",
+  "vpn_port_open": "%1 numaralı port eşlere açık"
 }

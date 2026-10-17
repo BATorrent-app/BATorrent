@@ -1003,8 +1003,6 @@
   "set_verbose_note": "Captures extra detail on libtorrent events. Use when reporting a bug; turn off afterwards.",
   "set_vpn_autoconnect": "Connect on launch",
   "set_vpn_autoconnect_note": "Reconnects the last used profile when BATorrent starts (asks for admin rights).",
-  "set_vpn_split": "Split tunnel",
-  "set_vpn_split_note": "Only BATorrent's traffic uses the VPN — everything else stays on your normal connection. Tracker name lookups use system DNS. Applies on the next connect.",
   "set_warn_suspicious": "Warn about suspicious files",
   "set_warn_suspicious_note": "Shows a warning when a downloaded media torrent hides an executable (e.g. movie.mp4.exe). Local check only — no files are uploaded, and nothing is ever deleted.",
   "set_watched_folder2": "Watched folder",
@@ -2092,5 +2090,7 @@
   "game_uninstall_title": "Uninstall %1?",
   "game_uninstall_body": "Runs the game's own uninstaller, which frees %1. Your saves stay where they are.",
   "game_uninstall_body_nosize": "Runs the game's own uninstaller. Your saves stay where they are.",
-  "game_uninstall_btn": "Uninstall"
+  "game_uninstall_btn": "Uninstall",
+  "vpn_retry_in": "Trying again in %1 s.",
+  "vpn_port_open": "port %1 open to peers"
 }

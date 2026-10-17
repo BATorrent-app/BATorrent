@@ -117,6 +117,11 @@ Endpoint = 127.0.0.1:%d
 }
 
 func startClient(t *testing.T) (*tunnel, *socksServer) {
+	tun, ss, _, _ := startClientWith(t)
+	return tun, ss
+}
+
+func startClientWith(t *testing.T) (*tunnel, *socksServer, *fakeServer, *wgConf) {
 	cpriv, cpub := keypair(t)
 	srv := startServer(t, cpub)
 	c, err := parseConf(clientConf(cpriv, srv))
@@ -137,7 +142,7 @@ func startClient(t *testing.T) (*tunnel, *socksServer) {
 	}
 	go ss.serve()
 	t.Cleanup(ss.close)
-	return tun, ss
+	return tun, ss, srv, c
 }
 
 // SOCKS5 greeting + password; returns the open control connection.
@@ -317,5 +322,101 @@ PersistentKeepalive = 15
 		if _, err := parseConf(bad); err == nil {
 			t.Errorf("%s: accepted", name)
 		}
+	}
+}
+
+// The fake server's NAT-PMP: every mapping request gets port 40000.
+func serveNatpmp(t *testing.T, s *fakeServer, port uint16) {
+	uc, err := s.tnet.ListenUDP(&net.UDPAddr{IP: net.IPv4(10, 9, 0, 1), Port: natpmpPort})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { uc.Close() })
+	go func() {
+		buf := make([]byte, 64)
+		for {
+			n, from, err := uc.ReadFrom(buf)
+			if err != nil {
+				return
+			}
+			if n < 12 || buf[0] != 0 {
+				continue
+			}
+			resp := make([]byte, 16)
+			resp[1] = 128 + buf[1]
+			binary.BigEndian.PutUint16(resp[8:], 1)
+			binary.BigEndian.PutUint16(resp[10:], port)
+			binary.BigEndian.PutUint32(resp[12:], natpmpLifetime)
+			uc.WriteTo(resp, from)
+		}
+	}()
+}
+
+// A peer on the far side reaching us on the forwarded port arrives at the
+// SOCKS client (incoming uTP, DHT queries), with the peer's own address.
+func incomingArrives(t *testing.T, srv *fakeServer, u *net.UDPConn, port uint16) {
+	t.Helper()
+	peer, err := srv.tnet.ListenUDP(&net.UDPAddr{IP: net.IPv4(10, 9, 0, 1), Port: 9999})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer peer.Close()
+	deadline := time.Now().Add(6 * time.Second)
+	buf := make([]byte, 2048)
+	for time.Now().Before(deadline) {
+		peer.WriteTo([]byte("utp syn"), &net.UDPAddr{IP: net.IPv4(10, 9, 0, 2), Port: int(port)})
+		u.SetReadDeadline(time.Now().Add(300 * time.Millisecond))
+		n, err := u.Read(buf)
+		if err != nil {
+			continue
+		}
+		src, _, payload, ok := parseUDPHeader(buf[:n])
+		if ok && src.String() == "10.9.0.1:9999" && string(payload) == "utp syn" {
+			return
+		}
+	}
+	t.Fatalf("nothing arrived on the forwarded port %d", port)
+}
+
+func TestPortForwarding(t *testing.T) {
+	tun, ss, srv, c := startClientWith(t)
+	serveNatpmp(t, srv, 40000)
+	if gw := natpmpGateway(c, tun.v4); gw.String() != "10.9.0.1" {
+		t.Fatalf("gateway %v", gw)
+	}
+	pf, port := startPortForward(tun, c)
+	if pf == nil || port != 40000 {
+		t.Fatalf("port %d", port)
+	}
+	defer pf.conn.Close()
+
+	ctl, ok := socksLogin(t, ss.port(), "u", "p")
+	if !ok {
+		t.Fatal("login refused")
+	}
+	defer ctl.Close()
+	_, relay := socksRequest(t, ctl, cmdUDP, netip.MustParseAddrPort("0.0.0.0:0"))
+	u, err := net.ListenUDP("udp4", &net.UDPAddr{IP: net.IPv4(127, 0, 0, 1)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer u.Close()
+	// the association learns where its client is from the first packet out
+	u.WriteToUDPAddrPort(append(udpHeader(netip.MustParseAddrPort("10.9.0.1:7001")), "hello"...), relay)
+
+	// the port arrives after the association exists: it moves onto it
+	ss.fwd.Store(uint32(port))
+	incomingArrives(t, srv, u, port)
+}
+
+func TestNoPortForwardingWhenTheServerHasNone(t *testing.T) {
+	tun, _, _, c := startClientWith(t)
+	start := time.Now()
+	pf, port := startPortForward(tun, c)
+	if pf != nil || port != 0 {
+		t.Fatalf("got port %d from a server without NAT-PMP", port)
+	}
+	if d := time.Since(start); d > 3*time.Second {
+		t.Fatalf("asking took %v", d)
 	}
 }

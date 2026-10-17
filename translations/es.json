@@ -1003,8 +1003,6 @@
   "set_verbose_note": "Captura detalles extra de eventos de libtorrent. Úsalo al reportar un bug; desactívalo después.",
   "set_vpn_autoconnect": "Conectar al iniciar",
   "set_vpn_autoconnect_note": "Reconecta el último perfil usado cuando BATorrent arranca (pide permisos de administrador).",
-  "set_vpn_split": "Túnel dividido",
-  "set_vpn_split_note": "Solo el tráfico de BATorrent usa la VPN — el resto del sistema sigue en tu conexión normal. La resolución de nombres de los trackers usa el DNS del sistema. Se aplica en la próxima conexión.",
   "set_warn_suspicious": "Avisar sobre archivos sospechosos",
   "set_warn_suspicious_note": "Muestra una advertencia cuando un torrent de medios oculta un ejecutable (p. ej. pelicula.mp4.exe). Comprobación local — no se sube ni se borra nada.",
   "set_watched_folder2": "Carpeta vigilada",
@@ -2092,5 +2090,7 @@
   "game_uninstall_title": "¿Desinstalar %1?",
   "game_uninstall_body": "Ejecuta el desinstalador del propio juego, que libera %1. Tus partidas se quedan donde están.",
   "game_uninstall_body_nosize": "Ejecuta el desinstalador del propio juego. Tus partidas se quedan donde están.",
-  "game_uninstall_btn": "Desinstalar"
+  "game_uninstall_btn": "Desinstalar",
+  "vpn_retry_in": "Reintentando en %1 s.",
+  "vpn_port_open": "puerto %1 abierto a los peers"
 }

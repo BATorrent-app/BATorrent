@@ -30,7 +30,8 @@ public:
     // answer with connected() or failed().
     virtual void up(const QString &confPath, const bat::WgConfig &cfg) = 0;
     virtual void down() = 0;
-    // The OS interface the tunnel created (e.g. "utun6"), for split-tunnel bind.
+    // What the page shows as the tunnel's interface (an OS interface, or for
+    // the SOCKS tunnel its own address).
     virtual QString interfaceName() const = 0;
     // Whether this backend actually protects traffic (false for the stub).
     virtual bool isReal() const = 0;
@@ -44,11 +45,16 @@ public:
     // the session binds to. socks() is {port, user, pass, ip} while it is up.
     virtual bool viaSocks() const { return false; }
     virtual QVariantMap socks() const { return {}; }
+    // The last failure will not go away by trying again (a broken config, a
+    // missing component): no automatic reconnect for it.
+    virtual bool failureIsFinal() const { return false; }
 
 signals:
     void connected(const QString &ifaceName);
     void disconnected();
     void failed(const QString &error);
+    // The port the VPN forwards to us, when it does (0: none, or lost).
+    void forwardedPort(int port);
 };
 
 class StubWgTunnel : public WgTunnel

@@ -46,7 +46,7 @@ bool isUiBoolKey(const QString &key)
         QStringLiteral("warnSuspiciousFiles"), QStringLiteral("autoDefenderExclude"),
         QStringLiteral("autoplayNext"), QStringLiteral("preferNativeLang"),
         QStringLiteral("gameAutoInstall"), QStringLiteral("blockBadPeers"),
-        QStringLiteral("vpnSplitTunnel"), QStringLiteral("vpnAutoConnect")
+        QStringLiteral("vpnAutoConnect")
     };
     return keys.contains(key);
 }

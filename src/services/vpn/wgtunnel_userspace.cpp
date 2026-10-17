@@ -76,12 +76,15 @@ void UserspaceWgTunnel::up(const QString &confPath, const bat::WgConfig &)
 {
     if (m_proc) return;
     const QString exe = helperPath();
+    m_final = false;
     if (exe.isEmpty()) {
+        m_final = true;
         QTimer::singleShot(0, this, [this]() { emit failed(QStringLiteral("The VPN component is missing from this install.")); });
         return;
     }
     QFile f(confPath);
     if (!f.open(QIODevice::ReadOnly)) {
+        m_final = true;
         QTimer::singleShot(0, this, [this]() { emit failed(QStringLiteral("config missing on disk")); });
         return;
     }
@@ -148,9 +151,14 @@ void UserspaceWgTunnel::readEvents()
             m_ready = m_port > 0;
             qInfo().noquote() << "[vpn] tunnel up, SOCKS on 127.0.0.1:" << m_port << "address" << m_ip;
             if (m_ready && !m_stopping) emit connected(interfaceName());
+        } else if (kind == QLatin1String("fwd")) {
+            m_fwd = ev.value(QStringLiteral("port")).toInt();
+            qInfo().noquote() << "[vpn] forwarded port" << m_fwd;
+            if (m_ready) emit forwardedPort(m_fwd);
         } else if (kind == QLatin1String("error")) {
-            m_error = describeError(ev.value(QStringLiteral("code")).toString(),
-                                    ev.value(QStringLiteral("msg")).toString());
+            const QString code = ev.value(QStringLiteral("code")).toString();
+            m_final = code == QLatin1String("conf");
+            m_error = describeError(code, ev.value(QStringLiteral("msg")).toString());
             qInfo().noquote() << "[vpn] batwg:" << ev.value(QStringLiteral("code")).toString()
                               << ev.value(QStringLiteral("msg")).toString();
         } else if (kind == QLatin1String("stale")) {
@@ -177,6 +185,7 @@ void UserspaceWgTunnel::finish(const QString &error)
     m_port = 0;
     m_user.clear();
     m_pass.clear();
+    if (m_fwd) { m_fwd = 0; emit forwardedPort(0); }
     if (wasStopping) emit disconnected();
     else emit failed(error);
 }

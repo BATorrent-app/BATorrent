@@ -20,6 +20,8 @@
 #include <QJsonObject>
 #include <QNetworkInterface>
 #include <QSettings>
+#include <QDateTime>
+#include <QTimer>
 #include <QUuid>
 
 VpnManager::VpnManager(WgTunnel *tunnel, QObject *parent)
@@ -35,6 +37,9 @@ VpnManager::VpnManager(WgTunnel *tunnel, QObject *parent)
             return;
         }
         m_iface = iface;
+        m_keepUp = true;
+        m_retries = 0;
+        stopRetry();
         setState(State::Connected);
         saveActiveTunnel(iface);
         emit interfaceUp(iface);
@@ -50,11 +55,32 @@ VpnManager::VpnManager(WgTunnel *tunnel, QObject *parent)
     connect(m_tunnel, &WgTunnel::failed, this, [this](const QString &why) {
         m_error = why;
         m_iface.clear();
+        if (m_keepUp && !m_tunnel->failureIsFinal()) scheduleRetry();
         setState(State::Failed);
         clearActiveTunnel();
         m_userDown = false;
         emit interfaceDown(false);
     });
+    connect(m_tunnel, &WgTunnel::forwardedPort, this, [this](int port) {
+        if (m_fwdPort == port) return;
+        m_fwdPort = port;
+        emit forwardedPortChanged();
+    });
+
+    m_retryTimer = new QTimer(this);
+    m_retryTimer->setSingleShot(true);
+    connect(m_retryTimer, &QTimer::timeout, this, [this]() {
+        m_retryTick->stop();
+        m_retryAt = 0;
+        emit retryChanged();
+        if (m_keepUp && (m_state == State::Failed || m_state == State::Disconnected) && indexOf(m_retryId) >= 0) {
+            qInfo().noquote() << "[vpn] trying again, attempt" << m_retries;
+            connectProfile(m_retryId);
+        }
+    });
+    m_retryTick = new QTimer(this);
+    m_retryTick->setInterval(1000);
+    connect(m_retryTick, &QTimer::timeout, this, &VpnManager::retryChanged);
 
     load();
 }
@@ -70,13 +96,6 @@ QString VpnManager::vpnDir() const
 QString VpnManager::confPath(const QString &id) const
 {
     return vpnDir() + QLatin1Char('/') + id + QStringLiteral(".conf");
-}
-
-// Short basename on purpose: the Windows client names the tunnel after the conf
-// file and caps that name at 32 chars: a full 32-char id + suffix won't fit.
-QString VpnManager::splitConfPath(const QString &id) const
-{
-    return vpnDir() + QLatin1Char('/') + id.left(12) + QStringLiteral("-split.conf");
 }
 
 int VpnManager::indexOf(const QString &id) const
@@ -146,7 +165,6 @@ void VpnManager::removeProfile(const QString &id)
     if (i < 0) return;
     if (m_activeId == id) disconnectVpn();
     QFile::remove(confPath(id));
-    QFile::remove(splitConfPath(id));
     m_profiles.remove(i);
     saveIndex();
     emit profilesChanged();
@@ -215,9 +233,39 @@ void VpnManager::resolveCountry(const QString &id)
     });
 }
 
+int VpnManager::retryIn() const
+{
+    if (m_retryAt <= 0) return 0;
+    const qint64 left = m_retryAt - QDateTime::currentMSecsSinceEpoch();
+    return left > 0 ? int((left + 999) / 1000) : 0;
+}
+
+void VpnManager::scheduleRetry()
+{
+    static const int delays[] = {5, 10, 30, 60, 120};
+    const int s = delays[qMin(m_retries, 4)];
+    ++m_retries;
+    m_retryAt = QDateTime::currentMSecsSinceEpoch() + qint64(s) * 1000;
+    m_retryTimer->start(s * 1000);
+    m_retryTick->start();
+    qInfo().noquote() << "[vpn] dropped; trying again in" << s << "s";
+    emit retryChanged();
+}
+
+void VpnManager::stopRetry()
+{
+    if (m_retryAt == 0 && !m_retryTimer->isActive()) return;
+    m_retryTimer->stop();
+    m_retryTick->stop();
+    m_retryAt = 0;
+    emit retryChanged();
+}
+
 void VpnManager::connectProfile(const QString &id)
 {
     if (m_state == State::Connecting || m_state == State::Connected) return;
+    stopRetry();
+    m_retryId = id;
     if (indexOf(id) < 0) { m_error = QStringLiteral("unknown profile"); setState(State::Failed); return; }
 
     QFile f(confPath(id));
@@ -226,23 +274,7 @@ void VpnManager::connectProfile(const QString &id)
     const bat::WgConfig cfg = bat::parseWireguardConfig(confText);
     if (!cfg.valid) { m_error = cfg.error; setState(State::Failed); return; }
 
-    QString tunnelConf = confPath(id);
-    // Split tunnel: bring the tunnel up from a Table=off copy so it takes no
-    // default route: only the torrent session (bound to the interface) uses it.
-    // (A SOCKS tunnel never routes anything, so it has nothing to split.)
-    if (!m_tunnel->viaSocks() && QSettings().value(QStringLiteral("vpnSplitTunnel"), false).toBool()) {
-        const QString staged = splitConfPath(id);
-        QSaveFile sf(staged);
-        if (!sf.open(QIODevice::WriteOnly)
-            || sf.write(bat::splitTunnelConf(confText).toUtf8()) < 0
-            || !sf.commit()) {
-            m_error = QStringLiteral("cannot stage split-tunnel config");
-            setState(State::Failed);
-            return;
-        }
-        QFile::setPermissions(staged, QFileDevice::ReadOwner | QFileDevice::WriteOwner);
-        tunnelConf = staged;
-    }
+    const QString tunnelConf = confPath(id);
 
     m_activeId = id;
     m_error.clear();
@@ -255,7 +287,10 @@ void VpnManager::connectProfile(const QString &id)
 void VpnManager::connectLastUsed()
 {
     const QString id = QSettings().value(QStringLiteral("vpnLastProfileId")).toString();
-    if (!id.isEmpty() && indexOf(id) >= 0) connectProfile(id);
+    if (id.isEmpty() || indexOf(id) < 0) return;
+    // brought up by the app, not the person: keep it up from the start
+    m_keepUp = true;
+    connectProfile(id);
 }
 
 // The active-tunnel record (iface + conf + profile) is what makes a tunnel
@@ -311,6 +346,9 @@ void VpnManager::adoptRunningTunnel()
 
 void VpnManager::disconnectVpn()
 {
+    m_keepUp = false;
+    m_retries = 0;
+    stopRetry();
     if (m_state == State::Disconnected) return;
     m_activeId.clear();
     m_userDown = true;

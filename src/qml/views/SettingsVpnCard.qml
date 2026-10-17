@@ -124,10 +124,13 @@ ColumnLayout {
                     }
                     Text {
                         Layout.fillWidth: true
-                        text: (i18n.language, page.st === 2 ? (page.activeProfile && page.wgState === 2 ? page.profileLabel(page.activeProfile)
+                        text: (i18n.language, page.st === 2 ? (page.activeProfile && page.wgState === 2
+                                                               ? page.profileLabel(page.activeProfile)
+                                                                 + (vpn.forwardedPort > 0 ? " · " + i18n.t("vpn_port_open").arg(vpn.forwardedPort) : "")
                                                              : i18n.t("vpn_via").arg(page.ifaceLabel(page.boundIface)))
                               : page.st === 1 ? i18n.t("vpn_bringing_up").arg(page.profileLabel(page.activeProfile))
                               : page.st === 3 ? (page.hasVpn && vpn.lastError.length > 0 ? vpn.lastError : i18n.t("vpn_dropped_sub"))
+                                                + (page.hasVpn && vpn.retryIn > 0 ? " " + i18n.t("vpn_retry_in").arg(vpn.retryIn) : "")
                               : i18n.t("vpn_off_sub"))
                         color: Theme.t2; font.pixelSize: 14; font.family: Theme.fontSans; font.features: Theme.tnum
                         wrapMode: Text.WordWrap

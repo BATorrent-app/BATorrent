@@ -27,12 +27,19 @@ static void wireSocks(QObject *context, VpnManager *vpn, IEngine *eng)
                                        {QStringLiteral("user"), user},
                                        {QStringLiteral("pass"), pass} });
     };
-    QObject::connect(vpn, &VpnManager::interfaceUp, context, [vpn, setProxy](const QString &) {
+    QObject::connect(vpn, &VpnManager::interfaceUp, context, [vpn, eng, setProxy](const QString &) {
         const QVariantMap s = vpn->socks();
         if (s.value(QStringLiteral("port")).toInt() <= 0) return;
         setProxy(s.value(QStringLiteral("port")).toInt(), s.value(QStringLiteral("user")).toString(),
                  s.value(QStringLiteral("pass")).toString());
+        if (vpn->forwardedPort() > 0)
+            eng->applySetting(QStringLiteral("vpnAnnouncePort"), vpn->forwardedPort());
         QSettings(QStringLiteral("BATorrent"), QStringLiteral("BATorrent")).setValue(QStringLiteral("vpnHold"), true);
+    });
+    // a port forwarded by the VPN is what peers are told to reach us on
+    QObject::connect(vpn, &VpnManager::forwardedPortChanged, context, [vpn, eng]() {
+        if (vpn->state() == VpnManager::State::Connected)
+            eng->applySetting(QStringLiteral("vpnAnnouncePort"), vpn->forwardedPort());
     });
     QObject::connect(vpn, &VpnManager::interfaceDown, context, [setProxy](bool deliberate) {
         QSettings s(QStringLiteral("BATorrent"), QStringLiteral("BATorrent"));

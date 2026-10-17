@@ -44,7 +44,7 @@ const (
 type tunnelNet interface {
 	DialContext(ctx context.Context, network, address string) (net.Conn, error)
 	LookupContextHost(ctx context.Context, host string) ([]string, error)
-	listenUDP(v6 bool) (net.PacketConn, error)
+	listenUDP(v6 bool, port uint16) (net.PacketConn, error)
 	hasV4() bool
 	hasV6() bool
 }
@@ -56,6 +56,7 @@ type socksServer struct {
 	pass []byte
 	wg   sync.WaitGroup
 	logf func(string, ...any)
+	fwd  atomic.Uint32 // the port the VPN forwards to us, 0 when none
 }
 
 func newSocksServer(addr string, tn tunnelNet, user, pass string, logf func(string, ...any)) (*socksServer, error) {
@@ -243,9 +244,28 @@ func (s *socksServer) connect(c net.Conn, host string, port uint16, atyp byte) {
 	}
 }
 
+// The tunnel side of a UDP association for one address family. Its socket
+// can be swapped for one on another port (when the forwarded port arrives or
+// changes) without ending the association.
+type udpOut struct {
+	mu   sync.Mutex
+	pc   net.PacketConn
+	port uint16 // the local port asked for (0: any)
+}
+
+func (u *udpOut) get() net.PacketConn {
+	if u == nil {
+		return nil
+	}
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	return u.pc
+}
+
 // UDP ASSOCIATE: a relay socket on 127.0.0.1 for the client, tunnel sockets
 // for the far side, alive as long as the client keeps the control
-// connection open.
+// connection open. The IPv4 tunnel socket sits on the forwarded port when
+// there is one, so the DHT and uTP go out from it and peers can reach in.
 func (s *socksServer) associate(c net.Conn) {
 	relay, err := net.ListenUDP("udp4", &net.UDPAddr{IP: net.IPv4(127, 0, 0, 1)})
 	if err != nil {
@@ -253,27 +273,98 @@ func (s *socksServer) associate(c net.Conn) {
 		return
 	}
 	defer relay.Close()
-	var outs [2]net.PacketConn // [0] IPv4, [1] IPv6
+	done := make(chan struct{})
+	defer close(done)
+
+	var client atomic.Pointer[netip.AddrPort]
+	// tunnel -> client, for as long as that socket is the current one
+	reader := func(o net.PacketConn) {
+		buf := make([]byte, 65536)
+		const room = 22 // the largest header, for an IPv6 source
+		for {
+			n, from, err := o.ReadFrom(buf[room:])
+			if err != nil {
+				return
+			}
+			to := client.Load()
+			ua, ok := from.(*net.UDPAddr)
+			if to == nil || !ok {
+				continue
+			}
+			src := ua.AddrPort()
+			h := udpHeader(netip.AddrPortFrom(src.Addr().Unmap(), src.Port()))
+			start := room - len(h)
+			copy(buf[start:], h)
+			relay.WriteToUDPAddrPort(buf[start:room+n], *to)
+		}
+	}
+	open := func(v6 bool, port uint16) *udpOut {
+		pc, err := s.tn.listenUDP(v6, port)
+		if err != nil && port != 0 {
+			port = 0 // taken (a second association): any port will do
+			pc, err = s.tn.listenUDP(v6, 0)
+		}
+		if err != nil {
+			return nil
+		}
+		go reader(pc)
+		return &udpOut{pc: pc, port: port}
+	}
+	var outs [2]*udpOut // [0] IPv4, [1] IPv6
 	if s.tn.hasV4() {
-		if outs[0], err = s.tn.listenUDP(false); err != nil {
+		if outs[0] = open(false, uint16(s.fwd.Load())); outs[0] == nil {
 			reply(c, repFail, nil)
 			return
 		}
-		defer outs[0].Close()
 	}
 	if s.tn.hasV6() {
-		if outs[1], err = s.tn.listenUDP(true); err == nil {
-			defer outs[1].Close()
-		}
+		outs[1] = open(true, 0)
 	}
+	defer func() {
+		for _, o := range outs {
+			if pc := o.get(); pc != nil {
+				pc.Close()
+			}
+		}
+	}()
 	bound := relay.LocalAddr().(*net.UDPAddr).AddrPort()
 	bound = netip.AddrPortFrom(bound.Addr().Unmap(), bound.Port())
 	reply(c, repOK, &bound)
 	c.SetDeadline(time.Time{})
 
-	var client atomic.Pointer[netip.AddrPort]
-	names := newNameCache(s.tn)
+	// the forwarded port arrived or changed: move the IPv4 socket onto it
+	if o4 := outs[0]; o4 != nil {
+		go func() {
+			tick := time.NewTicker(2 * time.Second)
+			defer tick.Stop()
+			for {
+				select {
+				case <-done:
+					return
+				case <-tick.C:
+				}
+				want := uint16(s.fwd.Load())
+				o4.mu.Lock()
+				cur := o4.port
+				o4.mu.Unlock()
+				if want == 0 || want == cur {
+					continue
+				}
+				pc, err := s.tn.listenUDP(false, want)
+				if err != nil {
+					continue
+				}
+				go reader(pc)
+				o4.mu.Lock()
+				old := o4.pc
+				o4.pc, o4.port = pc, want
+				o4.mu.Unlock()
+				old.Close()
+			}
+		}()
+	}
 
+	names := newNameCache(s.tn)
 	// client -> tunnel
 	go func() {
 		buf := make([]byte, 65536)
@@ -305,45 +396,18 @@ func (s *socksServer) associate(c net.Conn) {
 			send(outs, dst, payload)
 		}
 	}()
-	// tunnel -> client
-	for _, o := range outs {
-		if o == nil {
-			continue
-		}
-		go func(o net.PacketConn) {
-			buf := make([]byte, 65536)
-			const room = 22 // the largest header, for an IPv6 source
-			for {
-				n, from, err := o.ReadFrom(buf[room:])
-				if err != nil {
-					return
-				}
-				to := client.Load()
-				ua, ok := from.(*net.UDPAddr)
-				if to == nil || !ok {
-					continue
-				}
-				src := ua.AddrPort()
-				h := udpHeader(netip.AddrPortFrom(src.Addr().Unmap(), src.Port()))
-				start := room - len(h)
-				copy(buf[start:], h)
-				relay.WriteToUDPAddrPort(buf[start:room+n], *to)
-			}
-		}(o)
-	}
 	// the association lives as long as the control connection
 	io.Copy(io.Discard, c)
 }
 
-func send(outs [2]net.PacketConn, dst netip.AddrPort, p []byte) {
+func send(outs [2]*udpOut, dst netip.AddrPort, p []byte) {
 	o := outs[0]
 	if dst.Addr().Is6() {
 		o = outs[1]
 	}
-	if o == nil {
-		return
+	if pc := o.get(); pc != nil {
+		pc.WriteTo(p, net.UDPAddrFromAddrPort(dst))
 	}
-	o.WriteTo(p, net.UDPAddrFromAddrPort(dst))
 }
 
 // RSV(2) FRAG(1) ATYP ADDR PORT DATA. Fragments are dropped, as most servers

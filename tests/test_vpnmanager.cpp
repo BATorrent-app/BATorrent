@@ -13,6 +13,7 @@
 #include "nointernet.h"
 
 #include <QSignalSpy>
+#include <QTest>
 #include <QStandardPaths>
 #include <QDir>
 #include <QFile>
@@ -39,18 +40,18 @@ void freshStore()
     httptest::ensureApp();
     nointernet::install();   // profiles() kicks off a GeoIP lookup per endpoint
     // QSettings() needs an organization: without one the Windows registry
-    // backend stores nothing, and the split/adopt cases read back defaults.
+    // backend stores nothing, and the adopt case reads back defaults.
     QCoreApplication::setOrganizationName(QStringLiteral("BATorrentVpnTest"));
     QCoreApplication::setApplicationName(QStringLiteral("BATorrentVpnTest"));
     QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/vpn").removeRecursively();
     QSettings s;
-    for (const char *k : {"vpnSplitTunnel", "vpnLastProfileId",
+    for (const char *k : {"vpnLastProfileId",
                           "vpnActiveIface", "vpnActiveConf", "vpnActiveProfile"})
         s.remove(QLatin1String(k));
 }
 
 // Captures the conf path the manager hands to the tunnel: the seam for
-// asserting on split-tunnel staging without a real bring-up.
+// asserting on what the tunnel is given without a real bring-up.
 class RecordingTunnel : public WgTunnel
 {
 public:
@@ -163,36 +164,9 @@ TEST_CASE("VpnManager: profiles survive a restart", "[vpn]")
     CHECK(restored.profiles().first().toMap().value("endpoint").toString() == "1.2.3.4:51820");
 }
 
-TEST_CASE("VpnManager: split tunnel stages a Table=off config for the tunnel", "[vpn]")
+TEST_CASE("VpnManager: the tunnel is handed the profile's own config", "[vpn]")
 {
     freshStore();
-    QSettings().setValue("vpnSplitTunnel", true);
-
-    auto *tunnel = new RecordingTunnel;   // manager takes ownership
-    VpnManager mgr(tunnel);
-    const QString id = mgr.importConfig("IVPN", validConf());
-    REQUIRE(!id.isEmpty());
-
-    QSignalSpy upSpy(&mgr, &VpnManager::interfaceUp);
-    mgr.connectProfile(id);
-    REQUIRE((upSpy.count() > 0 || upSpy.wait(3000)));
-
-    CHECK(tunnel->lastConf.endsWith("-split.conf"));
-    QFile staged(tunnel->lastConf);
-    REQUIRE(staged.open(QIODevice::ReadOnly));
-    const QString text = QString::fromUtf8(staged.readAll());
-    CHECK(text.contains("Table = off"));
-    const auto cfg = bat::parseWireguardConfig(text);
-    REQUIRE(cfg.valid);
-    CHECK(cfg.dns.isEmpty());
-
-    QSettings().remove("vpnSplitTunnel");
-}
-
-TEST_CASE("VpnManager: full tunnel hands the original config to the tunnel", "[vpn]")
-{
-    freshStore();
-    QSettings().remove("vpnSplitTunnel");
 
     auto *tunnel = new RecordingTunnel;
     VpnManager mgr(tunnel);
@@ -273,4 +247,88 @@ TEST_CASE("VpnManager: interfaceDown reports whether the user asked for it", "[v
     mgr.disconnectVpn();
     REQUIRE((downSpy.count() > 0 || downSpy.wait(3000)));
     CHECK(downSpy.first().at(0).toBool() == true);   // deliberate
+}
+
+namespace {
+// Comes up, and can be told to drop or to refuse the next bring-ups.
+class FlakyTunnel : public RecordingTunnel
+{
+public:
+    using RecordingTunnel::RecordingTunnel;
+    void up(const QString &confPath, const bat::WgConfig &cfg) override
+    {
+        ++ups;
+        if (refuse > 0) {
+            --refuse;
+            QTimer::singleShot(0, this, [this]() { emit failed(QStringLiteral("no answer")); });
+            return;
+        }
+        RecordingTunnel::up(confPath, cfg);
+    }
+    bool failureIsFinal() const override { return final_; }
+    void drop() { emit failed(QStringLiteral("The VPN stopped.")); }
+    int ups = 0;
+    int refuse = 0;
+    bool final_ = false;
+};
+}
+
+TEST_CASE("VpnManager: a dropped tunnel is brought back on its own", "[vpn]")
+{
+    freshStore();
+    auto *tunnel = new FlakyTunnel;
+    VpnManager mgr(tunnel);
+    const QString id = mgr.importConfig("Proton", validConf());
+    QSignalSpy up(&mgr, &VpnManager::interfaceUp);
+    mgr.connectProfile(id);
+    REQUIRE((up.count() > 0 || up.wait(3000)));
+    REQUIRE(tunnel->ups == 1);
+
+    tunnel->refuse = 1;          // the first try fails too
+    tunnel->drop();
+    CHECK(mgr.state() == VpnManager::State::Failed);
+    CHECK(mgr.retryIn() == 5);
+    // 5 s: a failed try; 10 s more: back up
+    QSignalSpy down(&mgr, &VpnManager::interfaceDown);
+    REQUIRE(down.wait(7000));
+    CHECK(tunnel->ups == 2);
+    CHECK(mgr.retryIn() > 5);
+    REQUIRE(up.wait(12000));
+    CHECK(tunnel->ups == 3);
+    CHECK(mgr.state() == VpnManager::State::Connected);
+    CHECK(mgr.retryIn() == 0);
+}
+
+TEST_CASE("VpnManager: no automatic try after Disconnect, a broken config, or a first connect that failed", "[vpn]")
+{
+    freshStore();
+    auto *tunnel = new FlakyTunnel;
+    VpnManager mgr(tunnel);
+    const QString id = mgr.importConfig("Proton", validConf());
+
+    // the person's own first try failing is theirs to retry
+    tunnel->refuse = 1;
+    QSignalSpy down(&mgr, &VpnManager::interfaceDown);
+    mgr.connectProfile(id);
+    REQUIRE((down.count() > 0 || down.wait(3000)));
+    CHECK(mgr.retryIn() == 0);
+
+    // up, dropped, then Disconnect while a try is due: nothing more happens
+    QSignalSpy up(&mgr, &VpnManager::interfaceUp);
+    mgr.connectProfile(id);
+    REQUIRE((up.count() > 0 || up.wait(3000)));
+    tunnel->drop();
+    CHECK(mgr.retryIn() > 0);
+    mgr.disconnectVpn();
+    CHECK(mgr.retryIn() == 0);
+    const int ups = tunnel->ups;
+    QTest::qWait(6000);
+    CHECK(tunnel->ups == ups);
+
+    // up, then a failure that trying again cannot fix
+    mgr.connectProfile(id);
+    REQUIRE(up.wait(3000));
+    tunnel->final_ = true;
+    tunnel->drop();
+    CHECK(mgr.retryIn() == 0);
 }

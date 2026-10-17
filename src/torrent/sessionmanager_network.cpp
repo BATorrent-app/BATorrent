@@ -181,7 +181,9 @@ void SessionManager::setProxyLeakProof(bool enabled)
 void SessionManager::applyProxy()
 {
     if (m_vpnProxyPort <= 0) {
-        m_session.apply_settings(m_proxy.settings(m_anonymousMode));
+        lt::settings_pack pack = m_proxy.settings(m_anonymousMode);
+        pack.set_int(lt::settings_pack::announce_port, 0);
+        m_session.apply_settings(pack);
         return;
     }
     // leak-proof always: UPnP, NAT-PMP and LSD would announce the real
@@ -189,7 +191,26 @@ void SessionManager::applyProxy()
     lt::settings_pack pack = bat::buildProxySettings(1, QStringLiteral("127.0.0.1"), m_vpnProxyPort,
                                                      m_vpnProxyUser, m_vpnProxyPass, true, m_anonymousMode);
     pack.set_str(lt::settings_pack::outgoing_interfaces, "");
+    pack.set_int(lt::settings_pack::announce_port, m_vpnAnnouncePort);
     m_session.apply_settings(pack);
+}
+
+void SessionManager::setVpnAnnouncePort(int port)
+{
+    port = qBound(0, port, 65535);
+    if (port == m_vpnAnnouncePort) return;
+    m_vpnAnnouncePort = port;
+    if (m_vpnProxyPort <= 1) return;   // applied with the proxy when it comes
+    qInfo() << "[session] vpn forwarded port" << port;
+    lt::settings_pack pack;
+    pack.set_int(lt::settings_pack::announce_port, port);
+    m_session.apply_settings(pack);
+    // tell the trackers and the DHT now, not at the next interval
+    for (auto &h : m_torrents) {
+        if (!h.is_valid()) continue;
+        h.force_reannounce(0, -1, lt::torrent_handle::ignore_min_interval);
+        h.force_dht_announce();
+    }
 }
 
 void SessionManager::setVpnProxy(int port, const QString &user, const QString &pass)
@@ -197,6 +218,7 @@ void SessionManager::setVpnProxy(int port, const QString &user, const QString &p
     const bool was = m_vpnProxyPort > 0;
     const int before = m_vpnProxyPort;
     m_vpnProxyPort = qMax(0, port);
+    if (m_vpnProxyPort <= 1) m_vpnAnnouncePort = 0;   // the tunnel that forwarded it is gone
     m_vpnProxyUser = user;
     m_vpnProxyPass = pass;
     qInfo().noquote() << "[session] vpn proxy" << (m_vpnProxyPort > 1 ? QStringLiteral("on port %1").arg(m_vpnProxyPort)

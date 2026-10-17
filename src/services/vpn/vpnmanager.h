@@ -7,9 +7,9 @@
 
 // Owns imported WireGuard profiles and the connection state machine. Validates
 // a pasted/loaded .conf with the parser, stores it (owner-only perms: it holds
-// a private key), and drives a WgTunnel to connect/disconnect. Split-tunnel is
-// left to the app: on connect it emits the interface name so main() can bind the
-// torrent session to it (reusing the existing outgoing-interface + kill-switch).
+// a private key), and drives a WgTunnel to connect/disconnect. What goes through
+// the tunnel is left to the app (VpnWiring): on connect the torrent session is
+// pointed at it, and only the torrent session.
 
 #include "services/vpn/wgtunnel.h"
 
@@ -17,6 +17,8 @@
 #include <QString>
 #include <QVariantList>
 #include <QVector>
+
+class QTimer;
 
 class GeoIpResolver;
 
@@ -30,6 +32,10 @@ class VpnManager : public QObject
     Q_PROPERTY(QString connectedInterface READ connectedInterface NOTIFY stateChanged)
     Q_PROPERTY(QString lastError READ lastError NOTIFY stateChanged)
     Q_PROPERTY(bool tunnelReal READ tunnelIsReal CONSTANT)
+    // The port the VPN forwards to us (0: none); peers can reach in on it.
+    Q_PROPERTY(int forwardedPort READ forwardedPort NOTIFY forwardedPortChanged)
+    // Seconds until the next automatic try after a drop; 0 when none is due.
+    Q_PROPERTY(int retryIn READ retryIn NOTIFY retryChanged)
 public:
     enum class State { Disconnected, Connecting, Connected, Failed };
     Q_ENUM(State)
@@ -64,6 +70,8 @@ public:
     QString connectedInterface() const { return m_iface; }
     QString lastError() const { return m_error; }
     bool tunnelIsReal() const;
+    int forwardedPort() const { return m_fwdPort; }
+    int retryIn() const;
     // The tunnel is a local SOCKS5 proxy (batwg) rather than an interface;
     // socks() is {port, user, pass, ip} while connected.
     bool viaSocks() const { return m_tunnel && m_tunnel->viaSocks(); }
@@ -72,6 +80,8 @@ public:
 signals:
     void stateChanged();
     void profilesChanged();
+    void forwardedPortChanged();
+    void retryChanged();
     void interfaceUp(const QString &iface);    // connected → bind torrent traffic here
     // deliberate = the user disconnected; false = the tunnel failed/dropped.
     // main() uses this to fail closed on drops when the kill switch is on.
@@ -92,7 +102,6 @@ private:
     void clearActiveTunnel() const;
     QString vpnDir() const;
     QString confPath(const QString &id) const;
-    QString splitConfPath(const QString &id) const;
     int indexOf(const QString &id) const;
 
     GeoIpResolver *m_geoIp = nullptr;
@@ -103,8 +112,22 @@ private:
     QString m_activeId;
     QString m_iface;
     QString m_error;
-    QString m_lastTunnelConf;   // the conf handed to the tunnel (split copy or original)
+    QString m_lastTunnelConf;   // the conf handed to the tunnel
     bool m_userDown = false;
+
+    // Automatic reconnect: once a tunnel has been up (or was brought up on
+    // the app's own, at launch), a drop is followed by new tries, 5 s, 10 s,
+    // 30 s, 1 min, then every 2 min, until it is back or the person
+    // disconnects. Never for a failure that trying again cannot fix.
+    void scheduleRetry();
+    void stopRetry();
+    QTimer *m_retryTimer = nullptr;
+    QTimer *m_retryTick = nullptr;   // ticks retryIn down for the page
+    qint64 m_retryAt = 0;            // ms since epoch
+    int m_retries = 0;
+    bool m_keepUp = false;
+    QString m_retryId;
+    int m_fwdPort = 0;
 };
 
 #endif
