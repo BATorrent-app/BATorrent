@@ -100,24 +100,25 @@ QVariantList QmlSessionBridge::diskVolumes() const
 {
     static QVariantList cached;
     static qint64 lastCheck = 0;
-    // The category paths come from the engine over a synchronous call that
-    // runs the event loop; a stats tick arriving meanwhile re-evaluates the
-    // bindings reading this, which landed back here (QML: "binding loop").
-    // While it is being worked out, the last answer stands.
-    static bool computing = false;
-    if (computing) return cached;
     const qint64 now = QDateTime::currentSecsSinceEpoch();
     if (lastCheck != 0 && now - lastCheck < 10) return cached;
     lastCheck = now;
-    computing = true;
-    struct Done { ~Done() { computing = false; } } done;
 
     QList<QStorageInfo> vols = QStorageInfo::mountedVolumes();
     QStringList paths;
     paths << defaultSavePath();
-    const auto catPaths = m_session->allCategorySavePaths();
-    for (auto it = catPaths.constBegin(); it != catPaths.constEnd(); ++it)
-        if (!it.value().isEmpty()) paths << it.value();
+    // The category folders are read from the settings the engine keeps them
+    // in, not asked of the engine: that call is synchronous and runs the
+    // event loop, and a stats tick arriving meanwhile re-evaluated the
+    // bindings reading this property while they were being evaluated (QML:
+    // "binding loop" on the Find footer's saveVolume).
+    QSettings s;
+    s.beginGroup(QStringLiteral("categorySavePaths"));
+    for (const QString &key : s.childKeys()) {
+        const QString p = s.value(key).toString();
+        if (!p.isEmpty()) paths << p;
+    }
+    s.endGroup();
     for (QString p : paths)
         vols << QStorageInfo(p.isEmpty() ? QDir::homePath() : p);
 
