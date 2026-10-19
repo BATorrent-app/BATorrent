@@ -190,13 +190,17 @@ QVariant QmlPosterModel::data(const QModelIndex &index, int role) const
             if (it != m_fileKindCache.constEnd())
                 return *it;
         }
-        if (info.totalSize <= 0)
-            return QString();   // magnet without metadata: nothing to name yet
+        // A magnet without metadata has no files yet: nothing to name. The
+        // size is no gate: a direct download whose server sends no length
+        // knows its file name from the start, and showed no kind until done.
+        const auto files = m_session->filesAt(index.row());
+        if (files.empty())
+            return QString();
         // Biggest file, not the first: a release folder carries samples, nfos
         // and screenshots, and the payload is the one that matters.
         QString best;
         qint64 bestSize = -1;
-        for (const auto &f : m_session->filesAt(index.row())) {
+        for (const auto &f : files) {
             if (f.size <= bestSize) continue;
             QString p = f.path;
             if (p.endsWith(QLatin1String(".!bt"))) p.chop(4);   // still downloading

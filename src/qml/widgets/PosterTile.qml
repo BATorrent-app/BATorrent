@@ -186,7 +186,7 @@ Item {
             Behavior on y { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
         }
 
-        // no art: what kind of file it is, set large at the top left
+        // no art: what kind of file it is, set large in the middle
         Rectangle {
             anchors.fill: parent
             radius: Theme.radCard(10)
@@ -206,8 +206,9 @@ Item {
             }
             Text {
                 visible: tile.fileKind.length > 0
-                x: 12; y: 40
+                anchors.centerIn: parent
                 width: parent.width - 24
+                horizontalAlignment: Text.AlignHCenter
                 text: tile.fileKind
                 color: Theme.tileInk
                 font.pixelSize: 53
@@ -306,7 +307,7 @@ Item {
                 }
                 ToolTip.visible: barMa.containsMouse
                 ToolTip.delay: 250
-                ToolTip.text: tile.downloaded + " " + (i18n.language, i18n.t("word_of")) + " " + tile.size
+                ToolTip.text: tile.downloaded + " / " + tile.size
             }
         }
 

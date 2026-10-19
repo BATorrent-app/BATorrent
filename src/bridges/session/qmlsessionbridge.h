@@ -160,6 +160,8 @@ public:
     void onTorrentRemoved(int index);
     Q_INVOKABLE QList<int> selectedRows() const;
     Q_INVOKABLE void pauseSelected();
+    // Every selected item is paused (one or many): the toolbar offers Resume.
+    Q_INVOKABLE bool allSelectedPaused() const;
     Q_INVOKABLE void resumeSelected();
     Q_INVOKABLE void removeSelected();
     Q_INVOKABLE void removeSelectedWithFiles();

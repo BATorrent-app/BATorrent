@@ -35,6 +35,15 @@ void QmlSessionBridge::pauseSelected()
     for (int r : m_selectedRows) m_session->pauseTorrent(r);
 }
 
+bool QmlSessionBridge::allSelectedPaused() const
+{
+    if (m_selectedRows.isEmpty()) return selectedPaused();
+    const int n = m_session->torrentCount();
+    for (int r : m_selectedRows)
+        if (r < 0 || r >= n || !m_session->torrentAt(r).paused) return false;
+    return true;
+}
+
 void QmlSessionBridge::resumeSelected()
 {
     if (m_selectedRows.isEmpty()) {

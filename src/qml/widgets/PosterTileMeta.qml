@@ -20,10 +20,11 @@ Column {
     spacing: 3
 
     // "4.6 GB" and "7.4 GB" → "4.6 / 7.4 GB": the unit once
-    function pair(a, b, joiner) {
+    // "500 MB / 6.29 GB", and with one unit for both, "2.11/6.29 GB"
+    function pair(a, b) {
         var ua = a.replace(/^[\d.,\s]+/, ""), ub = b.replace(/^[\d.,\s]+/, "")
-        if (ua.length > 0 && ua === ub) a = a.slice(0, a.length - ua.length).trim()
-        return a + joiner + b
+        if (ua.length > 0 && ua === ub) return a.slice(0, a.length - ua.length).trim() + "/" + b
+        return a + " / " + b
     }
     function shortEta(sec) {
         if (sec < 0) return ""
@@ -70,7 +71,7 @@ Column {
         : k === "fetching" ? i18n.t("tile_fetching") + (tile.stateDetailShort.length > 0 ? " · " + tile.stateDetailShort : "")
         : slow ? tile.stateDetailShort
         : tile.isDownloading ? i18n.t("state_downloading") + (tile.etaSec >= 0 ? " · " + shortEta(tile.etaSec) : "")
-        : k === "paused" && tile.progress < 0.999 ? i18n.t("state_paused") + " · " + pair(tile.downloaded, tile.size, " " + i18n.t("word_of") + " ")
+        : k === "paused" && tile.progress < 0.999 ? i18n.t("state_paused") + " · " + pair(tile.downloaded, tile.size)
         : k === "paused" ? i18n.t("state_paused_done")
         : k === "queued" ? i18n.t("tile_queued").arg(tile.queuePos)
         : k === "checking" ? i18n.t("state_checking")
@@ -82,7 +83,7 @@ Column {
           // with repeats the total counts them twice: better none than a wrong one
           tile.isGroup ? (tile.groupRepeats > 0 ? "" : tile.size)
         : slow ? shortEta(tile.etaSec)
-        : tile.isDownloading ? pair(tile.downloaded, tile.size, " / ")
+        : tile.isDownloading ? pair(tile.downloaded, tile.size)
         : k === "paused" || k === "fetching" || k === "queued" ? ""
         // done: the line is the catalogue or the upload, and the size would cut it
         : (k === "completed" || k === "seeding") ? ""

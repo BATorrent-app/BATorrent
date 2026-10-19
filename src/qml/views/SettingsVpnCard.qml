@@ -21,6 +21,10 @@ ColumnLayout {
     spacing: 28
 
     readonly property bool hasVpn: typeof vpn !== "undefined" && vpn !== null
+    // the profile whose name is being edited: a click anywhere else on the
+    // page drops the edit (a click elsewhere takes no focus, so focus alone
+    // cannot tell)
+    property var renaming: null
     property var ifaces: []
     property string bound: ""
     property bool killSwitch: true
@@ -266,7 +270,18 @@ ColumnLayout {
                         implicitHeight: 60
                         color: active ? Theme.hover : (rowMa.containsMouse ? Qt.rgba(1, 1, 1, 0.03) : "transparent")
                         Rectangle { visible: index > 0; width: parent.width; height: 1; color: Theme.hairSoft }
+                        function startRename() { editing = true; nameEdit.text = modelData.name; nameEdit.forceActiveFocus(); nameEdit.selectAll() }
                         function commitRename() { vpn.renameProfile(modelData.id, nameEdit.text); profRow.editing = false }
+                        function cancelRename() { nameEdit.text = modelData.name; profRow.editing = false }
+                        // inside the field or on Rename: those clicks are the edit's own
+                        function ownsPoint(item, x, y) {
+                            var a = nameEdit.mapFromItem(item, x, y), b = renameLabel.mapFromItem(item, x, y)
+                            return nameEdit.contains(a) || renameLabel.contains(Qt.point(b.x, b.y))
+                        }
+                        onEditingChanged: {
+                            if (editing) page.renaming = profRow
+                            else if (page.renaming === profRow) page.renaming = null
+                        }
                         MouseArea { id: rowMa; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
                         RowLayout {
                             anchors.fill: parent
@@ -281,7 +296,11 @@ ColumnLayout {
                             ColumnLayout {
                                 Layout.fillWidth: true
                                 spacing: 2
-                                Text { visible: !profRow.editing; Layout.fillWidth: true; text: profRow.modelData.name; color: Theme.t1; font.pixelSize: 15; font.weight: Font.Medium; font.family: Theme.fontSans; elide: Text.ElideRight }
+                                Text {
+                                    visible: !profRow.editing; Layout.fillWidth: true; text: profRow.modelData.name; color: Theme.t1; font.pixelSize: 15; font.weight: Font.Medium; font.family: Theme.fontSans; elide: Text.ElideRight
+                                    // double-click the name to rename it
+                                    MouseArea { anchors.fill: parent; onDoubleClicked: profRow.startRename() }
+                                }
                                 TextField {
                                     id: nameEdit
                                     visible: profRow.editing
@@ -291,16 +310,19 @@ ColumnLayout {
                                     padding: 2; selectByMouse: true
                                     background: Rectangle { color: "transparent"; border.color: Theme.accent; border.width: 1; radius: Theme.rad(4) }
                                     onAccepted: profRow.commitRename()
-                                    onActiveFocusChanged: if (!activeFocus && profRow.editing) profRow.commitRename()
-                                    Keys.onEscapePressed: { text = profRow.modelData.name; profRow.editing = false }
+                                    // saved only by Enter or Rename; leaving it any other way drops the edit
+                                    onActiveFocusChanged: if (!activeFocus && profRow.editing) profRow.cancelRename()
+                                    Keys.onEscapePressed: profRow.cancelRename()
                                 }
                                 Text { Layout.fillWidth: true; text: (profRow.modelData.endpoint || "") + " · WireGuard"; color: Theme.t4; font.pixelSize: 13; font.family: Theme.fontSans; elide: Text.ElideRight }
                             }
                             Text {
+                                id: renameLabel
                                 text: (i18n.language, i18n.t("vpn_rename"))
-                                color: renMa.containsMouse ? Theme.t1 : Theme.t4; font.pixelSize: 13; font.family: Theme.fontSans
+                                color: renMa.containsMouse || profRow.editing ? Theme.t1 : Theme.t4; font.pixelSize: 13; font.family: Theme.fontSans
+                                font.weight: profRow.editing ? Font.DemiBold : Font.Normal
                                 MouseArea { id: renMa; anchors.fill: parent; anchors.margins: -4; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                                    onClicked: { profRow.editing = true; nameEdit.forceActiveFocus(); nameEdit.selectAll() } }
+                                    onClicked: profRow.editing ? profRow.commitRename() : profRow.startRename() }
                             }
                             Text {
                                 text: (i18n.language, i18n.t("vpn_remove"))
@@ -488,5 +510,21 @@ ColumnLayout {
         id: vpnFileDlg
         nameFilters: ["WireGuard config (*.conf)", "All files (*)"]
         onAccepted: if (page.hasVpn) vpn.importFromFile(selectedFile.toString(), "")
+    }
+
+    // while a name is being edited, a press anywhere but the field or Rename
+    // drops the edit, and still reaches whatever was under it
+    // (on the window's overlay layer: inside this ColumnLayout it would be laid
+    // out as a row, and anywhere in the app counts as "elsewhere")
+    MouseArea {
+        parent: Overlay.overlay
+        anchors.fill: parent
+        enabled: page.renaming !== null
+        visible: enabled
+        acceptedButtons: Qt.AllButtons
+        onPressed: function (mouse) {
+            if (page.renaming && !page.renaming.ownsPoint(this, mouse.x, mouse.y)) page.renaming.cancelRename()
+            mouse.accepted = false
+        }
     }
 }

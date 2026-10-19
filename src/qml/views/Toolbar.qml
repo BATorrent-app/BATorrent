@@ -36,8 +36,14 @@ Rectangle {
     readonly property bool hasSel: win ? win.hasSel : false
     // One button for both. A mixed selection pauses: the first item being
     // paused says nothing about the rest.
-    readonly property bool resumes: hasSel && selCount <= 1
-                                    && typeof session !== "undefined" && session.selectedPaused
+    // Resume when everything selected is paused, however many that is. Read
+    // again on selection and once a second with the stats, since pausing
+    // changes no selection.
+    readonly property bool resumes: {
+        if (!hasSel || typeof session === "undefined") return false
+        var _ = [controller ? controller.selectedRows : null, session.selectedPaused, session.pausedCount]
+        return session.allSelectedPaused()
+    }
 
     component TBtn: Rectangle {
         id: tb
@@ -46,6 +52,7 @@ Rectangle {
         property string hint
         property bool disabled: false
         signal clicked()
+        signal rightClicked()
         Layout.preferredHeight: 34
         Layout.preferredWidth: tbRow.implicitWidth + 20
         Layout.minimumWidth: Layout.preferredWidth
@@ -99,7 +106,11 @@ Rectangle {
             anchors.fill: parent
             hoverEnabled: !tb.disabled
             cursorShape: tb.disabled ? Qt.ArrowCursor : Qt.PointingHandCursor
-            onClicked: if (!tb.disabled) tb.clicked()
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
+            onClicked: function (mouse) {
+                if (mouse.button === Qt.RightButton) tb.rightClicked()
+                else if (!tb.disabled) tb.clicked()
+            }
         }
     }
 
@@ -199,17 +210,30 @@ Rectangle {
             font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum
         }
         TBtn {
+            id: pauseBtn
             visible: !toolbar.empty
             label: (i18n.language, i18n.t(toolbar.resumes ? "tb_resume" : "tb_pause"))
             icon: toolbar.resumes ? "qrc:/icons/play.svg" : "qrc:/icons/pause.svg"
             disabled: !toolbar.hasSel
             onClicked: toolbar.resumes ? session.resumeSelected() : session.pauseSelected()
+            // right-click: the same for everything, selected or not
+            onRightClicked: allMenu.popup(pauseBtn, 0, pauseBtn.height + 4)
+            DMenu {
+                id: allMenu
+                DMenuItem { iconSrc: "qrc:/icons/pause.svg"; text: (i18n.language, i18n.t("menu_pause_all")); onTriggered: session.pauseAll() }
+                DMenuItem { iconSrc: "qrc:/icons/play.svg"; text: (i18n.language, i18n.t("menu_resume_all")); onTriggered: session.resumeAll() }
+            }
         }
         TBtn { visible: !toolbar.empty; label: (i18n.language, i18n.t("tb_remove")); icon: "qrc:/icons/trash.svg"; disabled: !toolbar.hasSel; onClicked: toolbar.removeSelected() }
         TBtn { visible: !toolbar.empty; label: (i18n.language, i18n.t("tb_copy_magnet")); icon: "qrc:/icons/copy.svg"; disabled: !toolbar.hasSel; onClicked: session.copyMagnetLink() }
         TBtn { visible: !toolbar.empty; label: (i18n.language, i18n.t("tb_folder")); icon: "qrc:/icons/folder.svg"; hint: (i18n.language, i18n.t("ctx_open_folder")); disabled: !toolbar.hasSel; onClicked: session.openSaveFolder() }
         TGrpDiv { visible: !toolbar.empty }
         TBtn { label: (i18n.language, i18n.t("tb_rss")); icon: "qrc:/icons/rss.svg"; onClicked: toolbar.openRss() }
+        TBtn {
+            label: (i18n.language, i18n.t("tb_refresh")); icon: "qrc:/icons/refresh.svg"
+            hint: (i18n.language, i18n.t("tb_refresh")) + "  ·  F5"
+            onClicked: if (toolbar.win) toolbar.win.refreshView()
+        }
 
         Item { Layout.fillWidth: true }
 
@@ -240,9 +264,11 @@ Rectangle {
                 id: altRow
                 anchors.centerIn: parent
                 spacing: 8
+                // the turtle means slow, so it shows only when it is: full
+                // speed has a gauge, and the two read apart at a glance
                 IconImg {
                     anchors.verticalCenter: parent.verticalCenter
-                    src: "qrc:/icons/turtle.svg"
+                    src: altChip.on ? "qrc:/icons/turtle.svg" : "qrc:/icons/gauge.svg"
                     tint: altChip.ink
                     s: 17
                 }
