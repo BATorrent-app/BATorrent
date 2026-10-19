@@ -280,6 +280,16 @@ Window {
         if (typeof settings === "undefined") return
         var sw = Number(settings.get("winWidth") || 0)
         var sh = Number(settings.get("winHeight") || 0)
+        // First run: about 70% of a large screen (an ultrawide or a 4K one
+        // made 1360x884 look like a dialog), never below the default size.
+        if (sw <= 0 && sh <= 0 && Screen.desktopAvailableWidth > 0) {
+            sw = Math.max(win.width, Math.min(1760, Math.round(Screen.desktopAvailableWidth * 0.7)))
+            sh = Math.max(win.height, Math.min(1100, Math.round(Screen.desktopAvailableHeight * 0.75)))
+            if (sw <= Screen.desktopAvailableWidth && sh <= Screen.desktopAvailableHeight) {
+                win.x = Screen.virtualX + Math.round((Screen.desktopAvailableWidth - sw) / 2)
+                win.y = Screen.virtualY + Math.round((Screen.desktopAvailableHeight - sh) / 2)
+            }
+        }
         if (sw >= win.minimumWidth && sw <= Screen.desktopAvailableWidth) win.width = sw
         if (sh >= win.minimumHeight && sh <= Screen.desktopAvailableHeight) win.height = sh
     }

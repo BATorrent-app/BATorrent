@@ -21,8 +21,8 @@ import "../widgets/TimeAgo.js" as TimeAgo
 
 ModalShell {
     id: dlg
-    cardWidth: 1040
-    cardHeight: 830
+    cardWidth: 960
+    cardHeight: 740
     cardRadius: 14
     // leaving any way counts as having read it
     function dismiss() { close(); done() }
@@ -221,7 +221,7 @@ ModalShell {
                     x: 36; y: 34
                     width: letter.width - 72
                     spacing: 0
-                    Text { text: dlg.shortVer; color: Theme.t1; font.family: "New Rocker"; font.pixelSize: 112; lineHeight: 0.85 }
+                    Text { text: dlg.shortVer; color: Theme.t1; font.family: "New Rocker"; font.pixelSize: 96; lineHeight: 0.85 }
                     RowLayout {
                         Layout.fillWidth: true
                         Row {
@@ -243,7 +243,7 @@ ModalShell {
                             textFormat: Text.StyledText
                             linkColor: Theme.accentText
                             color: Theme.t1; font.pixelSize: 15; font.family: Theme.fontSans
-                            wrapMode: Text.WordWrap; lineHeight: 1.65
+                            wrapMode: Text.WordWrap; lineHeight: 1.4
                             onLinkActivated: function (link) { Qt.openUrlExternally(link) }
                         }
                     }

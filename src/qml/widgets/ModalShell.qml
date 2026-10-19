@@ -59,8 +59,10 @@ Item {
     Rectangle {
         id: card
         anchors.centerIn: parent
-        width: Math.min(shell.cardWidth, shell.width - 32)
-        height: Math.min(shell.cardHeight, shell.height - 48)
+        // the window shows around it: a big dialog in a small window keeps a
+        // margin in proportion, instead of filling it edge to edge
+        width: Math.min(shell.cardWidth, shell.width - Math.max(32, shell.width * 0.12))
+        height: Math.min(shell.cardHeight, shell.height - Math.max(48, shell.height * 0.12))
         opacity: shell.anim
         scale: Theme.reduceMotion ? 1 : (0.97 + 0.03 * shell.anim)
         radius: Theme.rad(shell.cardRadius)
