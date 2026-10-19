@@ -13,6 +13,10 @@ class IEngine;
 namespace VpnWiring {
 
 void wire(QObject *context, VpnManager *vpn, IEngine *eng);
+// A new engine process (after a crash, the app starts another) reads only the
+// saved settings: it would hold traffic for a VPN that is in fact up, and
+// never hear the proxy. Tell it where things stand.
+void resync(VpnManager *vpn, IEngine *eng);
 
 } // namespace VpnWiring
 

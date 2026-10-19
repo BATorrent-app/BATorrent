@@ -150,6 +150,13 @@ ColumnLayout {
                         vpn.connectProfile(vpn.activeProfileId !== "" ? vpn.activeProfileId : vpn.profiles[0].id)
                     }
                 }
+                // dropped: stop trying and let the torrents go without it
+                BtnFlat {
+                    visible: page.hasVpn && page.wgState === 3
+                    lg: true
+                    text: (i18n.language, i18n.t("vpn_disconnect"))
+                    onClicked: vpn.disconnectVpn()
+                }
             }
             Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hairSoft }
             RowLayout {

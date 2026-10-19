@@ -18,7 +18,7 @@ Rectangle {
     // dropped: the tunnel failed after being up (not a connect that never
     // worked). The window keeps it, so the nav chip says the same thing.
     property bool dropped: false
-    readonly property bool killSwitch: typeof settings !== "undefined" && settings.getBool("killSwitchEnabled")
+    readonly property bool killSwitch: typeof settings !== "undefined" && settings.getBool("killSwitchEnabled", true)
 
     visible: dropped
     implicitHeight: visible ? 46 : 0
@@ -43,6 +43,13 @@ Rectangle {
         LightBtn {
             text: (i18n.language, i18n.t("vpn_reconnect"))
             onClicked: if (band.hasVpn) vpn.connectLastUsed()
+        }
+        // without the VPN, on purpose: the torrents go on over the normal connection
+        BtnFlat {
+            sm: true
+            visible: band.hasVpn && vpn.connState !== 0
+            text: (i18n.language, i18n.t("vpn_disconnect"))
+            onClicked: vpn.disconnectVpn()
         }
         BtnFlat { sm: true; text: (i18n.language, i18n.t("vpn_settings_btn")); onClicked: band.settingsRequested() }
     }

@@ -657,7 +657,7 @@ Window {
         ignoreUnknownSignals: true
         function onStateChanged() { if (vpn.connState === win.vpnConnected) win.vpnDropped = false }
         // the tunnel went away without being asked to
-        function onInterfaceDown(deliberate) { if (!deliberate) win.vpnDropped = true }
+        function onInterfaceDown(deliberate) { win.vpnDropped = !deliberate }
     }
     Connections {
         target: typeof notifications !== "undefined" ? notifications : null

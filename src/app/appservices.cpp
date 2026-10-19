@@ -137,6 +137,11 @@ AppServices AppServices::create(QApplication &app)
             nb->onTorrentError(up ? QStringLiteral("Torrent engine reconnected")
                                   : QStringLiteral("Torrent engine restarting…"));
         });
+        // a respawned engine knows only the saved settings: hand it the VPN's state
+        QObject::connect(svc.ipcEngine, &IpcEngine::engineStatusChanged, &app,
+                         [vpn = svc.vpnManager, eng = svc.eng](bool up) {
+            if (up) VpnWiring::resync(vpn, eng);
+        });
     }
     QObject::connect(&RssManager::instance(), &RssManager::itemAutoDownloaded,
                      telegram, &TelegramNotifier::onRssAutoDownloaded);

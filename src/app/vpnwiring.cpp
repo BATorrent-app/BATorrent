@@ -19,13 +19,35 @@ namespace VpnWiring {
 // proxy that is not there, so the torrents stop and nothing else on the
 // machine is affected; Disconnect lifts it. "vpnHold" remembers the VPN was
 // on, so the next launch holds traffic and reconnects.
+static void sendProxy(IEngine *eng, int port, const QString &user = QString(), const QString &pass = QString())
+{
+    eng->applySetting(QStringLiteral("vpnProxy"),
+                      QVariantMap{ {QStringLiteral("port"), port},
+                                   {QStringLiteral("user"), user},
+                                   {QStringLiteral("pass"), pass} });
+}
+
+void resync(VpnManager *vpn, IEngine *eng)
+{
+    if (!vpn->viaSocks()) return;
+    const QVariantMap s = vpn->socks();
+    if (vpn->state() == VpnManager::State::Connected && s.value(QStringLiteral("port")).toInt() > 0) {
+        sendProxy(eng, s.value(QStringLiteral("port")).toInt(), s.value(QStringLiteral("user")).toString(),
+                  s.value(QStringLiteral("pass")).toString());
+        if (vpn->forwardedPort() > 0)
+            eng->applySetting(QStringLiteral("vpnAnnouncePort"), vpn->forwardedPort());
+        return;
+    }
+    QSettings st(QStringLiteral("BATorrent"), QStringLiteral("BATorrent"));
+    const bool hold = st.value(QStringLiteral("vpnHold"), false).toBool()
+                      && st.value(QStringLiteral("killSwitchEnabled"), true).toBool();
+    sendProxy(eng, hold ? 1 : 0);
+}
+
 static void wireSocks(QObject *context, VpnManager *vpn, IEngine *eng)
 {
     auto setProxy = [eng](int port, const QString &user = QString(), const QString &pass = QString()) {
-        eng->applySetting(QStringLiteral("vpnProxy"),
-                          QVariantMap{ {QStringLiteral("port"), port},
-                                       {QStringLiteral("user"), user},
-                                       {QStringLiteral("pass"), pass} });
+        sendProxy(eng, port, user, pass);
     };
     QObject::connect(vpn, &VpnManager::interfaceUp, context, [vpn, eng, setProxy](const QString &) {
         const QVariantMap s = vpn->socks();
