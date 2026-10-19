@@ -16,6 +16,8 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QUrl>
+#include <QDateTime>
+#include <QTimer>
 #include <QSettings>
 #include <algorithm>
 
@@ -154,9 +156,44 @@ bool QmlSessionBridge::selectedHasArchives() const
 
 bool QmlSessionBridge::selectedHasVideo() const
 {
+    const EngineFlags *f = selectedEngineFlags();
+    return f && f->playable;
+}
+
+// The last answer for the selected torrent, and a fresh question queued when
+// there is none or it is old. Never asks the engine itself (see the header).
+const QmlSessionBridge::EngineFlags *QmlSessionBridge::selectedEngineFlags() const
+{
+    if (!hasSelection()) return nullptr;
+    const QString hash = m_session->torrentHashAt(m_selectedIndex);
+    if (hash.isEmpty()) return nullptr;
+    const auto it = m_engineFlags.constFind(hash);
+    const bool stale = it == m_engineFlags.constEnd()
+                       || QDateTime::currentMSecsSinceEpoch() - it->at > 5000;
+    if (stale && !m_engineFlagsQueued.contains(hash)) {
+        m_engineFlagsQueued.insert(hash);
+        QTimer::singleShot(0, const_cast<QmlSessionBridge *>(this), [this, hash]() {
+            const_cast<QmlSessionBridge *>(this)->fetchEngineFlags(hash);
+        });
+    }
+    return it == m_engineFlags.constEnd() ? nullptr : &it.value();
+}
+
+void QmlSessionBridge::fetchEngineFlags(const QString &hash)
+{
+    m_engineFlagsQueued.remove(hash);
+    const int row = m_session->torrentIndexByInfoHash(hash);
+    if (row < 0) { m_engineFlags.remove(hash); return; }
+    EngineFlags f;
     // A game that bundles cutscene/intro videos must not offer Play: Install wins.
-    return hasSelection() && m_session->torrentHasVideo(m_selectedIndex)
-           && !isGameTorrent(m_selectedIndex);
+    f.playable = m_session->torrentHasVideo(row) && !isGameTorrent(row);
+    f.sequential = m_session->isSequentialDownload(row);
+    f.at = QDateTime::currentMSecsSinceEpoch();
+    const auto old = m_engineFlags.constFind(hash);
+    const bool changed = old == m_engineFlags.constEnd()
+                         || old->playable != f.playable || old->sequential != f.sequential;
+    m_engineFlags.insert(hash, f);
+    if (changed) emit selectionChanged();
 }
 
 void QmlSessionBridge::extractSelected(const QString &password)
@@ -276,14 +313,18 @@ void QmlSessionBridge::setSelectedUploadLimit(int kbps)
 
 void QmlSessionBridge::setSelectedSequential(bool on)
 {
-    for (int r : resolveRows(m_selectedRows, m_selectedIndex))
+    for (int r : resolveRows(m_selectedRows, m_selectedIndex)) {
         m_session->setSequentialDownload(r, on);
+        auto it = m_engineFlags.find(m_session->torrentHashAt(r));
+        if (it != m_engineFlags.end()) it->sequential = on;
+    }
     emit selectionChanged(); emit selectionListsChanged();
 }
 
 bool QmlSessionBridge::selectedSequential() const
 {
-    return hasSelection() && m_session->isSequentialDownload(m_selectedIndex);
+    const EngineFlags *f = selectedEngineFlags();
+    return f && f->sequential;
 }
 
 void QmlSessionBridge::setSelectedStopAfter(int mode)

@@ -9,6 +9,8 @@
 #include "services/integrations/gameinstall.h"
 
 #include <QElapsedTimer>
+#include <QHash>
+#include <QSet>
 #include <memory>
 
 class HttpDownloadManager;
@@ -653,6 +655,17 @@ private:
     mutable QVariantList m_resumeItems;
     mutable qint64 m_resumeBuiltAt = 0;
     mutable bool m_resumeQueued = false;
+    // selectedHasVideo / selectedSequential: what the engine says of the
+    // selected torrent, asked for outside any binding. In split mode the
+    // question is a call that runs the event loop, and asked from a binding a
+    // tick arriving meanwhile re-ran it (QML: binding loop on the detail
+    // panel's Mark button and the menu's Sequential tick). Kept per torrent,
+    // asked again when a few seconds old (metadata can bring the video).
+    struct EngineFlags { bool playable = false; bool sequential = false; qint64 at = 0; };
+    mutable QHash<QString, EngineFlags> m_engineFlags;
+    mutable QSet<QString> m_engineFlagsQueued;
+    const EngineFlags *selectedEngineFlags() const;
+    void fetchEngineFlags(const QString &hash);
     void onAchievementsLookedUp(const QString &key, int appId, const QVariantList &list);
     void startAchievementWatch(const QString &infoHash);
     void stopAchievementWatch(const QString &infoHash);

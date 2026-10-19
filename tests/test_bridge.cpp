@@ -1099,3 +1099,33 @@ TEST_CASE("Session bridge: resumeItems is built outside the getter", "[bridge][s
     CHECK(bridge.resumeItems().first().toMap().value(QStringLiteral("infoHash")).toString() == hash);
     bridge.forgetGame(hash);
 }
+
+// The detail panel's Mark button and the menu's Sequential tick read these from
+// bindings. In split mode the answer is a call to the engine that runs the
+// event loop, and a tick arriving meanwhile re-ran the binding: QML logged a
+// loop. The getters hand back the last answer and ask outside the binding.
+TEST_CASE("Session bridge: selectedHasVideo is asked of the engine outside the getter", "[bridge][session]")
+{
+    app();
+    QTemporaryDir tmp;
+    REQUIRE(tmp.isValid());
+    QDir().mkpath(tmp.path() + "/dl");
+
+    SessionManager session;
+    MetadataResolver resolver;
+    QmlSessionBridge bridge(&session, &resolver);
+    const int base = session.torrentCount();
+    session.addTorrent(makeVideoFixtureTorrent(tmp.path(), QStringLiteral("flags")), tmp.path() + "/dl");
+    REQUIRE(pumpUntil([&] { return session.torrentCount() == base + 1; }));
+    REQUIRE(pumpUntil([&] { return session.torrentHasVideo(base); }));
+
+    bridge.setSelectedRows({base});
+    CHECK_FALSE(bridge.selectedHasVideo());   // not asked yet, and not asked here
+    QSignalSpy changed(&bridge, &QmlSessionBridge::selectionChanged);
+    REQUIRE(pumpUntil([&] { return bridge.selectedHasVideo(); }, 3000));
+    CHECK(changed.count() > 0);
+
+    CHECK_FALSE(bridge.selectedSequential());
+    bridge.setSelectedSequential(true);
+    CHECK(bridge.selectedSequential());       // the setter keeps the answer current
+}
