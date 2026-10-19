@@ -1015,3 +1015,55 @@ TEST_CASE("categoryForExtension sorts files that are not titles", "[bridge][cate
     CHECK(QmlPosterModel::categoryForExtension("").isEmpty());
     CHECK(QmlPosterModel::categoryForExtension("nfo").isEmpty());
 }
+
+// A tester's filter counts stayed at 1 after the last item went: the engine sent
+// no update while the library was empty, and the app (in split mode) kept the
+// old list. One more update goes out as it empties, then it is quiet again.
+TEST_CASE("Session: one update goes out as the library empties", "[session][tick]")
+{
+    app();
+    QTemporaryDir tmp;
+    REQUIRE(tmp.isValid());
+    QDir().mkpath(tmp.path() + "/dl");
+
+    SessionManager session;
+    while (session.torrentCount() > 0) session.removeTorrent(0, false, true);
+    session.addTorrent(makeFixtureTorrent(tmp.path(), QStringLiteral("empties")), tmp.path() + "/dl");
+    REQUIRE(pumpUntil([&] { return session.torrentCount() == 1; }));
+
+    QSignalSpy updates(&session, &SessionManager::torrentsUpdated);
+    session.removeTorrent(0, false, true);
+    REQUIRE(session.torrentCount() == 0);
+    // the tick is once a second
+    REQUIRE(pumpUntil([&] { return updates.count() > 0; }, 3000));
+    const int afterEmpty = updates.count();
+    pumpUntil([] { return false; }, 2500);
+    CHECK(updates.count() == afterEmpty);
+}
+
+// Several items selected, all paused: the toolbar reads Resume. It only did for one.
+TEST_CASE("Session bridge: allSelectedPaused covers a multi-selection", "[bridge][session]")
+{
+    app();
+    QTemporaryDir tmp;
+    REQUIRE(tmp.isValid());
+    QDir().mkpath(tmp.path() + "/dl");
+
+    SessionManager session;
+    MetadataResolver resolver;
+    QmlSessionBridge bridge(&session, &resolver);
+    const int base = session.torrentCount();
+    for (const QString &tag : {QStringLiteral("p1"), QStringLiteral("p2")})
+        session.addTorrent(makeFixtureTorrent(tmp.path(), tag), tmp.path() + "/dl");
+    REQUIRE(pumpUntil([&] { return session.torrentCount() == base + 2; }));
+
+    bridge.setSelectedRows({base, base + 1});
+    session.pauseTorrent(base);
+    session.pauseTorrent(base + 1);
+    REQUIRE(pumpUntil([&] { return session.torrentAt(base).paused && session.torrentAt(base + 1).paused; }));
+    CHECK(bridge.allSelectedPaused());
+
+    session.resumeTorrent(base + 1);
+    REQUIRE(pumpUntil([&] { return !session.torrentAt(base + 1).paused; }));
+    CHECK_FALSE(bridge.allSelectedPaused());
+}

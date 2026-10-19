@@ -9,6 +9,8 @@
 
 #include "services/downloads/httpdownloadmanager.h"
 #include "services/downloads/httpdownload.h"
+#include "services/downloads/httpmergeengine.h"
+#include "torrent/sessionmanager.h"
 #include "httptestserver.h"
 
 #include <QSignalSpy>
@@ -109,4 +111,35 @@ TEST_CASE("HttpDownloadManager: a completed download survives a restart", "[http
     REQUIRE(d != nullptr);
     CHECK(d->state() == HttpDownload::State::Completed);
     CHECK(d->fileName() == fileName);
+}
+
+// A finished direct download whose file was deleted outside the app said
+// Completed for ever; a torrent in that state reads as missing, and so does it.
+TEST_CASE("HttpMergeEngine: a finished download whose file is gone reads as missing", "[httpmanager]")
+{
+    freshStore();
+
+    const QByteArray payload = makePayload(20000);
+    RangeServer server(payload);
+    REQUIRE(server.listen(QHostAddress::LocalHost));
+
+    QTemporaryDir dir;
+    HttpDownloadManager mgr;
+    const QString id = mgr.add(server.url(), dir.path());
+    REQUIRE(waitFinished(mgr));
+    const QString path = mgr.byId(id)->finalPath();
+    REQUIRE(QFile::exists(path));
+
+    SessionManager inner;
+    {
+        HttpMergeEngine merged(&inner, &mgr);
+        const TorrentInfo info = merged.torrentAt(merged.torrentCount() - 1);
+        CHECK(info.completed);
+        CHECK_FALSE(info.filesMissing);
+    }
+
+    REQUIRE(QFile::remove(path));
+    // a new engine: the presence check is cached for a few seconds per item
+    HttpMergeEngine merged(&inner, &mgr);
+    CHECK(merged.torrentAt(merged.torrentCount() - 1).filesMissing);
 }
