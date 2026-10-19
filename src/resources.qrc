@@ -324,6 +324,7 @@
 <file>../src/qml/widgets/CloseButton.qml</file>
 <file>../src/qml/widgets/Segmented.qml</file>
 <file>../src/qml/widgets/TimeAgo.js</file>
+<file>../src/qml/widgets/FocusRelease.js</file>
 <file>../src/qml/widgets/BtnFlat.qml</file>
 <file>../src/qml/widgets/TFld.qml</file>
 <file>../src/qml/widgets/TArea.qml</file>

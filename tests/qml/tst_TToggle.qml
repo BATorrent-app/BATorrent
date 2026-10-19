@@ -5,6 +5,7 @@
 import QtQuick
 import QtTest
 import "qrc:/src/qml/widgets"
+import "qrc:/src/qml/theme"
 
 Item {
     id: root
@@ -47,6 +48,20 @@ Item {
             tryCompare(tg, "on", false)
             tryCompare(toggledSpy, "count", 1)
             compare(toggledSpy.signalArguments[0][0], false)
+        }
+
+        // Light themes: an off toggle was the white field on a near-white
+        // panel, and the white knob vanished with it. Off is a grey track there.
+        function test_offTrackShowsOnALightTheme() {
+            Theme.setName("light")
+            try {
+                verify(Theme.isLight)
+                var tg = createTemporaryObject(toggleComp, root)
+                verify(!Qt.colorEqual(tg.color, Theme.field), "not the field colour")
+                verify(Qt.colorEqual(tg.color, Theme.track))
+            } finally {
+                Theme.setName("default")
+            }
         }
     }
 }

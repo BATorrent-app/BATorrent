@@ -13,6 +13,7 @@ import "theme"
 import "widgets"
 import "overlays"
 import "views"
+import "widgets/FocusRelease.js" as FocusRelease
 
 Window {
     id: win
@@ -486,18 +487,8 @@ Window {
         if (libraryChrome.filterBar) libraryChrome.filterBar.clearSearchFocus()
         dropHiddenTextFocus()
     }
-    // A text field keeps the keyboard focus when its page is hidden (Qt keeps
-    // focus on invisible items), and a field with the focus takes Ctrl+A and
-    // Ctrl+V before the app's shortcuts see them: after a visit to Find, both
-    // did nothing on Downloads until something else took the focus.
-    function dropHiddenTextFocus() {
-        var f = win.activeFocusItem
-        if (!f || f.cursorPosition === undefined || f.visible) return
-        // the field itself gives it up: focusing the window's root alone hands
-        // the focus straight back to the field its scope remembers
-        f.focus = false
-        if (win.activeFocusItem === f) win.contentItem.forceActiveFocus()
-    }
+    // a hidden text field would keep Ctrl+A and Ctrl+V from the shortcuts
+    function dropHiddenTextFocus() { FocusRelease.dropHidden(win) }
 
     function selectRow(proxyRow, mods) { library.selectRow(proxyRow, mods) }
     function isRowSelected(proxyRow) { return library.isRowSelected(proxyRow) }
