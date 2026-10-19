@@ -121,6 +121,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/downloads/httpdownloadmanager.cpp
     ${CMAKE_SOURCE_DIR}/src/services/downloads/httpmergeengine.cpp
     ${CMAKE_SOURCE_DIR}/src/app/vpnwiring.cpp
+    ${CMAKE_SOURCE_DIR}/src/app/alttap.cpp
     ${CMAKE_SOURCE_DIR}/src/services/vpn/wgtunnel.h
     ${CMAKE_SOURCE_DIR}/src/services/vpn/vpnmanager.h
     ${CMAKE_SOURCE_DIR}/src/services/vpn/vpnmanager.cpp
@@ -421,6 +422,7 @@ bat_add_test(test_filehostresolver test_filehostresolver.cpp)
 bat_add_test(test_wireguardconfig test_wireguardconfig.cpp)
 bat_add_test(test_vpnmanager test_vpnmanager.cpp)
 bat_add_test(test_vpnwiring test_vpnwiring.cpp)
+bat_add_test(test_alttap test_alttap.cpp)
 bat_add_test(test_proxycontroller test_proxycontroller.cpp)
 bat_add_test(test_settingshelpers test_settingshelpers.cpp)
 bat_add_test(test_updatetrack test_updatetrack.cpp)

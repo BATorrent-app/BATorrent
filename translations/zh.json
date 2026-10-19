@@ -965,6 +965,8 @@
   "set_search_title": "搜索",
   "set_seed_ratio2": "达到分享率后停止做种",
   "set_seed_ratio_note": "当 上传 ÷ 下载 达到此比率时暂停做种。0 = 无限制。",
+  "set_menu_bar": "显示菜单栏",
+  "set_menu_bar_note": "在顶部箭头旁显示“文件”“种子”“设置”和“帮助”。关闭时，按 Alt 可暂时显示。",
   "set_show_dl_chip": "在顶部栏显示下载快捷方式",
   "set_show_dl_chip_note": "磁盘仪表旁轮播的继续观看/下载项。",
   "set_speed_bits_opt": "比特 (Kbps)",

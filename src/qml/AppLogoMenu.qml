@@ -29,40 +29,25 @@ DMenu {
 
     width: 248
 
-    DMenu {
+    AppFileMenu {
         sub: true
-        title: (i18n.language, i18n.t("menu_file_title"))
-        DMenuItem { iconSrc: "qrc:/icons/file.svg"; text: (i18n.language, i18n.t("menu_open_torrent")); onTriggered: root.openFileDialog.open() }
-        DMenuItem { iconSrc: "qrc:/icons/magnet.svg"; text: (i18n.language, i18n.t("menu_add_magnet")); onTriggered: root.addDialog.open() }
-        DMenuItem { iconSrc: "qrc:/icons/link.svg"; text: (i18n.language, i18n.t("menu_add_http")); onTriggered: root.host.promptHttpDownload() }
-        DMenuItem { iconSrc: "qrc:/icons/plus.svg"; text: (i18n.language, i18n.t("menu_create_torrent")); onTriggered: root.createDialog.open() }
-        DMenuItem { iconSrc: "qrc:/icons/search.svg"; text: (i18n.language, i18n.t("menu_inspect_torrent")); onTriggered: root.inspectFileDialog.open() }
-        DMenuItem { iconSrc: "qrc:/icons/download.svg"; text: (i18n.language, i18n.t("menu_import_qbt")); onTriggered: root.importQbtDialog.open() }
-        DMenuSep {}
-        DMenuItem { iconSrc: "qrc:/icons/clock.svg"; text: (i18n.language, i18n.t("menu_recently_removed")); onTriggered: root.host.showWin(root.host.removedWinLoader) }
+        host: root.host
+        openFileDialog: root.openFileDialog
+        addDialog: root.addDialog
+        createDialog: root.createDialog
+        inspectFileDialog: root.inspectFileDialog
+        importQbtDialog: root.importQbtDialog
     }
-    DMenu {
+    AppTorrentMenu {
         sub: true
-        title: (i18n.language, i18n.t("menu_torrent_title"))
-        DMenuItem { iconSrc: "qrc:/icons/pause.svg"; text: (i18n.language, i18n.t("menu_pause")); enabled: root.host.hasSel; onTriggered: session.pauseSelected() }
-        DMenuItem { iconSrc: "qrc:/icons/play.svg"; text: (i18n.language, i18n.t("menu_resume")); enabled: root.host.hasSel; onTriggered: session.resumeSelected() }
-        DMenuSep {}
-        DMenuItem { iconSrc: "qrc:/icons/pause.svg"; text: (i18n.language, i18n.t("menu_pause_all")); onTriggered: if (typeof session !== "undefined") session.pauseAll() }
-        DMenuItem { iconSrc: "qrc:/icons/play.svg"; text: (i18n.language, i18n.t("menu_resume_all")); onTriggered: if (typeof session !== "undefined") session.resumeAll() }
-        DMenuSep {}
-        DMenuItem { iconSrc: "qrc:/icons/refresh.svg"; text: (i18n.language, i18n.t("tb_refresh")); shortcutText: "F5"; onTriggered: root.host.refreshView() }
-        DMenuItem { iconSrc: "qrc:/icons/trash.svg"; text: (i18n.language, i18n.t("menu_remove")); enabled: root.host.hasSel; onTriggered: root.removeDialog.open() }
+        host: root.host
+        removeDialog: root.removeDialog
     }
-    DMenu {
+    AppSettingsMenu {
         sub: true
-        title: (i18n.language, i18n.t("menu_settings_title"))
-        DMenuItem { iconSrc: "qrc:/icons/settings.svg"; text: (i18n.language, i18n.t("menu_preferences")); onTriggered: root.host.currentPage = 3 }
-        DMenuItem { iconSrc: "qrc:/icons/set-addons.svg"; text: (i18n.language, i18n.t("menu_addons")); onTriggered: root.addAddonDialog.open() }
-        DMenuItem { iconSrc: "qrc:/icons/rss.svg"; text: (i18n.language, i18n.t("menu_rss")); onTriggered: root.host.showWin(root.host.rssWinLoader) }
-        DMenuItem { iconSrc: "qrc:/icons/share.svg"; text: (i18n.language, i18n.t("menu_pair")); onTriggered: { root.pairingDialog.reload(); root.pairingDialog.open() } }
-        DMenuSep {}
-        DMenuItem { iconSrc: "qrc:/icons/gauge.svg"; text: (i18n.language, i18n.t("menu_statistics")); onTriggered: root.host.showWin(root.host.statsWinLoader) }
-        DMenuItem { iconSrc: "qrc:/icons/bolt.svg"; text: (i18n.language, i18n.t("menu_speedtest")); onTriggered: Qt.openUrlExternally("https://fast.com") }
+        host: root.host
+        addAddonDialog: root.addAddonDialog
+        pairingDialog: root.pairingDialog
     }
     AppHelpMenu {
         sub: true

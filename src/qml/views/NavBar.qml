@@ -42,10 +42,24 @@ Rectangle {
     signal backRequested()
     signal forwardRequested()
     signal helpRequested(Item anchor)
+    // The menu bar Alt shows in the title strip, as Windows apps do: File,
+    // Torrent, Settings, Help. Hidden the rest of the time.
+    property bool menuBarShown: false
+    property bool menuBarAlways: false          // the setting: shown all the time, Alt only takes the keys
+    property int openMenu: -1                   // the one whose menu is open, lit
+    property int menuBarCursor: 0               // the title the arrow keys are on
+    signal menuBarRequested(int index, Item anchor)
+    signal menuBarDismissed()
+    // the bar takes the keys while it shows, as a menu bar does
+    function focusMenuBar() { menuBarCursor = 0; menuBarRow.forceActiveFocus() }
+    function menuBarHasFocus(item) { return item === menuBarRow }
+    readonly property var menuBarTitles: (i18n.language, [i18n.t("menu_file_title"), i18n.t("menu_torrent_title"),
+                                                          i18n.t("menu_settings_title"), i18n.t("menu_help_title")])
+    function menuBarAnchor(i) { return menuBarRep.itemAt(i) }
 
     // Everything a click must reach, for the frameless window: the rest of the
     // bar is title bar (drag, double click, the system menu on right click).
-    readonly property var hitItems: [logoBtn, navRow, dlChip, vpnChip, gearBtn, backBtn, fwdBtn, helpBtn]
+    readonly property var hitItems: [logoBtn, navRow, dlChip, vpnChip, gearBtn, backBtn, fwdBtn, helpBtn, menuBarRow]
     readonly property alias minButton: minBtn
     readonly property alias maxButton: maxBtn
     readonly property alias closeButton: closeBtn
@@ -351,6 +365,7 @@ Rectangle {
         width: parent.width
         height: bar.stripH
         Row {
+            id: stripLeft
             x: 8
             anchors.verticalCenter: parent.verticalCenter
             spacing: 2
@@ -368,12 +383,71 @@ Rectangle {
                 tip: (i18n.language, i18n.t("nav_forward"))
                 onClicked: bar.forwardRequested()
             }
+            Row {
+                id: menuBarRow
+                visible: bar.menuBarShown || bar.menuBarAlways
+                // the library's own arrow and Enter shortcuts would take these first
+                Keys.onShortcutOverride: function(e) {
+                    e.accepted = [Qt.Key_Left, Qt.Key_Right, Qt.Key_Down, Qt.Key_Return, Qt.Key_Enter,
+                                  Qt.Key_Space, Qt.Key_Escape].indexOf(e.key) >= 0
+                }
+                Keys.onPressed: function(e) {
+                    var n = bar.menuBarTitles.length
+                    if (e.key === Qt.Key_Left) bar.menuBarCursor = (bar.menuBarCursor + n - 1) % n
+                    else if (e.key === Qt.Key_Right) bar.menuBarCursor = (bar.menuBarCursor + 1) % n
+                    else if (e.key === Qt.Key_Down || e.key === Qt.Key_Return || e.key === Qt.Key_Enter || e.key === Qt.Key_Space)
+                        bar.menuBarRequested(bar.menuBarCursor, menuBarRep.itemAt(bar.menuBarCursor))
+                    else if (e.key === Qt.Key_Escape) bar.menuBarDismissed()
+                    else return
+                    e.accepted = true
+                }
+                Item {
+                    width: 13; height: bar.stripH
+                    Rectangle { anchors.centerIn: parent; width: 1; height: 16; color: Theme.hair }
+                }
+                Repeater {
+                    id: menuBarRep
+                    model: bar.menuBarTitles
+                    delegate: Rectangle {
+                        id: mt
+                        required property int index
+                        required property string modelData
+                        readonly property bool lit: bar.openMenu === index || mtMa.containsMouse
+                                                    || (bar.openMenu < 0 && menuBarRow.activeFocus && bar.menuBarCursor === index)
+                        width: mtText.implicitWidth + 20; height: bar.stripH
+                        radius: Theme.rad(6)
+                        color: lit ? Theme.hover2 : "transparent"
+                        Text {
+                            id: mtText
+                            anchors.centerIn: parent
+                            text: mt.modelData
+                            color: mt.lit ? Theme.t1 : Theme.t2
+                            font.pixelSize: 12
+                            font.weight: Font.DemiBold
+                            font.family: Theme.fontSans
+                        }
+                        MouseArea {
+                            id: mtMa
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            onClicked: bar.menuBarRequested(mt.index, mt)
+                            // with one open, moving to the next opens it, as a menu bar does
+                            onContainsMouseChanged: if (containsMouse && bar.openMenu >= 0 && bar.openMenu !== mt.index)
+                                                        bar.menuBarRequested(mt.index, mt)
+                        }
+                        Accessible.role: Accessible.MenuItem
+                        Accessible.name: mt.modelData
+                    }
+                }
+            }
         }
         // where you are: the page and what is open in it
         Text {
             anchors.centerIn: parent
-            width: Math.min(implicitWidth, parent.width - 2 * 320)
+            // centred, and clear of whatever sits at either side
+            width: Math.min(implicitWidth, parent.width - 2 * Math.max(320, stripLeft.x + stripLeft.width + 16))
             text: bar.location
+            visible: !bar.menuBarShown || bar.menuBarAlways
             color: Theme.t2
             font.pixelSize: 12
             font.weight: Font.DemiBold

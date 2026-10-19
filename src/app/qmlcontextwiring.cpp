@@ -4,6 +4,7 @@
 
 #include "app/qmlcontextwiring.h"
 
+#include "app/alttap.h"
 #include "bridges/isolatedmediaplayer.h"
 #include "bridges/qmlposterbridge.h"
 #include "bridges/qmllibrarymodel.h"
@@ -23,6 +24,7 @@ namespace QmlContextWiring {
 void registerProperties(QQmlContext *ctx, const QmlContextObjects &o)
 {
     qmlRegisterType<IsolatedMediaPlayer>("BATorrent.Media", 1, 0, "IsolatedMediaPlayer");
+    qmlRegisterType<AltTap>("BATorrent.Keys", 1, 0, "AltTap");
     ctx->setContextProperty("torrentModel", o.torrentFilter);
     ctx->setContextProperty("torrentFilter", o.torrentFilter);
     ctx->setContextProperty("themeBridge", o.themeBridge);

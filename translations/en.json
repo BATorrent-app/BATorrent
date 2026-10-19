@@ -965,6 +965,8 @@
   "set_search_title": "Search",
   "set_seed_ratio2": "Stop seeding at ratio",
   "set_seed_ratio_note": "Pauses seeding when upload ÷ download reaches this ratio. 0 = no limit.",
+  "set_menu_bar": "Show the menu bar",
+  "set_menu_bar_note": "File, Torrent, Settings and Help beside the arrows at the top. Without it, Alt shows them for a moment.",
   "set_show_dl_chip": "Show download shortcut in the top bar",
   "set_show_dl_chip_note": "The rotating continue/download item next to the disk gauge.",
   "set_speed_bits_opt": "Bits (Kbps)",

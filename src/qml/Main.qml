@@ -14,6 +14,7 @@ import "widgets"
 import "overlays"
 import "views"
 import "widgets/FocusRelease.js" as FocusRelease
+import BATorrent.Keys 1.0
 
 Window {
     id: win
@@ -62,7 +63,7 @@ Window {
     // 3 Settings).
     property int currentPage: 0
     // coming back to the window: no hidden field should hold the keys
-    onActiveChanged: if (active) dropHiddenTextFocus()
+    onActiveChanged: if (active) dropHiddenTextFocus(); else closeMenuBar()
     onCurrentPageChanged: {
         clearFilterFocus()
         Qt.callLater(win.dropHiddenTextFocus)   // once the old page has hidden
@@ -169,6 +170,7 @@ Window {
     // the contextual continue/download chip in the top bar (some users find it
     // redundant on the Downloads page)
     property bool showDownloadChip: true
+    property bool menuBarAlways: false   // File, Torrent, Settings, Help always in the title strip
     readonly property Item navHost: navBar
 
     // Selection/filter state lives on library. Leaf chrome takes `controller`
@@ -222,6 +224,7 @@ Window {
         target: typeof settings !== "undefined" ? settings : null
         function onChanged() {
             win.showDownloadChip = settings.getBool("showDownloadChip", true)
+            win.menuBarAlways = settings.getBool("menuBarAlways", false)
             // Read here too, not only at startup: the setup wizard writes this
             // one like the other three and promises the app follows along.
             var cm = settings.getBool("classicMode")
@@ -246,8 +249,10 @@ Window {
         if (typeof themeBridge !== "undefined") themeBridge.setAppFontFamily(appFace)
         if (typeof settings !== "undefined") library.classicMode = settings.getBool("classicMode")
         if (library.classicMode) library.gridView = false   // classic is a list layout
-        if (typeof settings !== "undefined")
+        if (typeof settings !== "undefined") {
             win.showDownloadChip = settings.getBool("showDownloadChip", true)
+            win.menuBarAlways = settings.getBool("menuBarAlways", false)
+        }
         if (typeof settings === "undefined") {
             showSplash = true
         } else {
@@ -620,6 +625,83 @@ Window {
         releaseNotesDialog: releaseNotesDlg
     }
 
+    // ----- the menu bar Alt shows in the title strip -----
+    // Alt pressed and let go on its own shows File, Torrent, Settings and Help
+    // beside the arrows, as Windows apps do, and gives them the keys; Alt again,
+    // Esc, a pick or a click elsewhere puts them away. With "Show the menu bar"
+    // on they stay, and Alt only gives them the keys. The logo's menu holds the
+    // same menus.
+    AltTap { onTapped: win.toggleMenuBar() }
+    readonly property var barMenus: [barFileMenu, barTorrentMenu, barSettingsMenu, barHelpMenu]
+    function toggleMenuBar() {
+        if (!navBar.ownsTitleBar) return
+        if (navBar.menuBarShown) { closeMenuBar(); return }
+        menuBarReturnFocus = win.activeFocusItem
+        navBar.menuBarShown = true
+        navBar.focusMenuBar()
+    }
+    property Item menuBarReturnFocus: null   // what had the keys before the bar took them
+    function closeMenuBar() {
+        var open = navBar.openMenu
+        var wasShown = navBar.menuBarShown
+        navBar.openMenu = -1
+        navBar.menuBarShown = false
+        if (open >= 0) barMenus[open].close()
+        // the keys go back where they were, unless a pick moved them on (a
+        // dialog it opened has them): once the menu has handed them back
+        var back = menuBarReturnFocus
+        menuBarReturnFocus = null
+        if (wasShown) Qt.callLater(function() {
+            var f = win.activeFocusItem
+            if (back && back.visible && (!f || f === win.contentItem || navBar.menuBarHasFocus(f)))
+                back.forceActiveFocus()
+        })
+    }
+    function openBarMenu(i, anchor) {
+        if (navBar.openMenu === i) { closeMenuBar(); return }
+        var prev = navBar.openMenu
+        navBar.openMenu = i          // set first: the one closing below must not take the bar with it
+        if (prev >= 0) barMenus[prev].close()
+        var p = anchor.mapToItem(win.contentItem, 0, anchor.height + 4)
+        barMenus[i].popup(win.contentItem, p.x, p.y)
+    }
+    function barMenuHidden(i) { if (navBar.openMenu === i) closeMenuBar() }
+    AppFileMenu {
+        id: barFileMenu
+        modal: false   // the titles beside it still take the mouse, to move along the bar
+        host: win
+        openFileDialog: openFileDlg
+        addDialog: addDlg
+        createDialog: createDlg
+        inspectFileDialog: inspectFileDlg
+        importQbtDialog: importQbtDlg
+        onAboutToHide: win.barMenuHidden(0)
+    }
+    AppTorrentMenu {
+        id: barTorrentMenu
+        modal: false
+        host: win
+        removeDialog: removeDlg
+        onAboutToHide: win.barMenuHidden(1)
+    }
+    AppSettingsMenu {
+        id: barSettingsMenu
+        modal: false
+        host: win
+        addAddonDialog: addAddonDlg
+        pairingDialog: pairingDlg
+        onAboutToHide: win.barMenuHidden(2)
+    }
+    AppHelpMenu {
+        id: barHelpMenu
+        modal: false
+        host: win
+        tourOverlay: appTour.tourOverlay
+        welcomeDialog: welcomeDlg
+        releaseNotesDialog: releaseNotesDlg
+        onAboutToHide: win.barMenuHidden(3)
+    }
+
     // ----- system tray -----
     AppTray {
         id: trayIcon
@@ -770,6 +852,9 @@ Window {
             canBack: win.canGoBack
             canForward: win.pageForward.length > 0
             onBackRequested: win.goBack()
+            menuBarAlways: win.menuBarAlways
+            onMenuBarRequested: function(index, anchor) { win.openBarMenu(index, anchor) }
+            onMenuBarDismissed: win.closeMenuBar()
             onForwardRequested: win.goForward()
             onHelpRequested: function(anchor) {
                 if (helpMenu.opened) { helpMenu.close(); return }

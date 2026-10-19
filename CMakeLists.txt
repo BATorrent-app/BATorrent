@@ -60,6 +60,8 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/app/steamartprovider.cpp
     src/app/appservices.cpp
     src/app/vpnwiring.cpp
+    src/app/alttap.h
+    src/app/alttap.cpp
     src/app/mediarefresh.cpp
     src/app/gamecatalogseed.cpp
     src/app/qmlcontextwiring.cpp

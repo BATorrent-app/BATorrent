@@ -965,6 +965,8 @@
   "set_search_title": "Búsqueda",
   "set_seed_ratio2": "Dejar de sembrar al ratio",
   "set_seed_ratio_note": "Pausa el seeding cuando subida ÷ bajada alcanza este ratio. 0 = sin límite.",
+  "set_menu_bar": "Mostrar la barra de menús",
+  "set_menu_bar_note": "Archivo, Torrent, Configuración y Ayuda junto a las flechas, arriba. Sin ella, Alt los muestra un momento.",
   "set_show_dl_chip": "Mostrar acceso de descarga en la barra superior",
   "set_show_dl_chip_note": "El elemento rotativo de continuar/descargar junto al medidor de disco.",
   "set_speed_bits_opt": "Bits (Kbps)",

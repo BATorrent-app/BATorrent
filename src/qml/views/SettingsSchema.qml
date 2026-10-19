@@ -68,6 +68,8 @@ QtObject {
             { type: "toggle", key: "followSystem", label: (i18n.language, i18n.t("set_follow_system")), note: (i18n.language, i18n.t("set_follow_system_note")) },
             { type: "appicon", label: (i18n.language, i18n.t("set_app_icon")), note: (i18n.language, i18n.t("set_app_icon_note")) },
             { type: "group", label: (i18n.language, i18n.t("set_grp_layout")) },
+            // the title strip's own (Windows and Linux): macOS has the system menu bar
+            { type: "toggle", key: "menuBarAlways", on: false, hidden: Qt.platform.os === "osx", label: (i18n.language, i18n.t("set_menu_bar")), note: (i18n.language, i18n.t("set_menu_bar_note")) },
             { type: "toggle", key: "showDownloadChip", label: (i18n.language, i18n.t("set_show_dl_chip")), on: true, note: (i18n.language, i18n.t("set_show_dl_chip_note")) },
             { type: "toggle", key: "reduceMotion", on: false, label: (i18n.language, i18n.t("set_reduce_motion")), note: (i18n.language, i18n.t("set_reduce_motion_note")) },
             { type: "group", label: (i18n.language, i18n.t("set_grp_updates")) },

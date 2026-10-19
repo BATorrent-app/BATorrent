@@ -965,6 +965,8 @@
   "set_search_title": "Arama",
   "set_seed_ratio2": "Oranda tohumlamayı durdur",
   "set_seed_ratio_note": "Yükleme ÷ indirme bu orana ulaştığında tohumlamayı duraklatır. 0 = sınır yok.",
+  "set_menu_bar": "Menü çubuğunu göster",
+  "set_menu_bar_note": "Dosya, Torrent, Ayarlar ve Yardım, üstte okların yanında. Kapalıyken Alt onları kısa bir süre gösterir.",
   "set_show_dl_chip": "Üst çubukta indirme kısayolunu göster",
   "set_show_dl_chip_note": "Disk göstergesinin yanındaki dönen devam/indirme öğesi.",
   "set_speed_bits_opt": "Bit (Kbps)",

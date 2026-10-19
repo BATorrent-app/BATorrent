@@ -164,6 +164,9 @@
 <file>../src/qml/AppTray.qml</file>
 <file>../src/qml/AppLogoMenu.qml</file>
 <file>../src/qml/AppHelpMenu.qml</file>
+<file>../src/qml/AppFileMenu.qml</file>
+<file>../src/qml/AppTorrentMenu.qml</file>
+<file>../src/qml/AppSettingsMenu.qml</file>
 <file>../src/qml/AppFramelessAgent.qml</file>
 <file>../src/qml/AppMenuBar.qml</file>
 <file>../src/qml/MainWindowLoaders.qml</file>

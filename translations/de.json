@@ -965,6 +965,8 @@
   "set_search_title": "Suche",
   "set_seed_ratio2": "Seeding bei Verhältnis stoppen",
   "set_seed_ratio_note": "Pausiert Seeding, wenn Upload ÷ Download dieses Verhältnis erreicht. 0 = kein Limit.",
+  "set_menu_bar": "Menüleiste anzeigen",
+  "set_menu_bar_note": "Datei, Torrent, Einstellungen und Hilfe neben den Pfeilen oben. Ohne sie zeigt Alt sie kurz an.",
   "set_show_dl_chip": "Download-Verknüpfung in der oberen Leiste anzeigen",
   "set_show_dl_chip_note": "Das rotierende Fortsetzen-/Download-Element neben der Speicheranzeige.",
   "set_speed_bits_opt": "Bits (Kbps)",

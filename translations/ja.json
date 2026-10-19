@@ -965,6 +965,8 @@
   "set_search_title": "検索",
   "set_seed_ratio2": "比率に達したらシードを停止",
   "set_seed_ratio_note": "アップロード ÷ ダウンロードがこの比率に達するとシードを一時停止。0 = 無制限。",
+  "set_menu_bar": "メニューバーを表示",
+  "set_menu_bar_note": "上部の矢印の横に「ファイル」「トレント」「設定」「ヘルプ」を表示します。オフのときは Alt で一時的に表示されます。",
   "set_show_dl_chip": "上部バーにダウンロードのショートカットを表示",
   "set_show_dl_chip_note": "ディスクゲージの横にある、続きを見る/ダウンロードの回転項目。",
   "set_speed_bits_opt": "ビット (Kbps)",
