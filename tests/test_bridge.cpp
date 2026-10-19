@@ -1067,3 +1067,35 @@ TEST_CASE("Session bridge: allSelectedPaused covers a multi-selection", "[bridge
     REQUIRE(pumpUntil([&] { return !session.torrentAt(base + 1).paused; }));
     CHECK_FALSE(bridge.allSelectedPaused());
 }
+
+// The carousel's resume list asks the engine for the libraries over a call that
+// runs the event loop. Built inside the getter, a tick arriving meanwhile
+// re-ran the bindings reading it, and QML logged a binding loop on every start.
+// The getter hands back the last list; the rebuild runs afterwards.
+TEST_CASE("Session bridge: resumeItems is built outside the getter", "[bridge][session][games]")
+{
+    app();
+    QTemporaryDir dir;
+    REQUIRE(dir.isValid());
+    const QString exe = dir.filePath(QStringLiteral("Played.exe"));
+    { QFile f(exe); REQUIRE(f.open(QIODevice::WriteOnly)); f.write("MZ"); }
+    const QString hash = QStringLiteral("6fb1a3cc06b3f82f2f8c544156cdc54e4f08de5c");
+    QFile::remove(QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation))
+                      .filePath(QStringLiteral("playlog.json")));
+    {
+        QSettings s;
+        s.setValue(QStringLiteral("keptGames/") + hash + QStringLiteral("/name"), QStringLiteral("Played Game"));
+        s.setValue(QStringLiteral("gameExe/") + hash, exe);
+        s.setValue(QStringLiteral("gamePlayed/") + hash, 1700000000000LL);
+    }
+    SessionManager session;
+    MetadataResolver resolver;
+    QmlSessionBridge bridge(&session, &resolver);
+
+    CHECK(bridge.resumeItems().isEmpty());   // nothing built yet, and nothing built here
+    QSignalSpy changed(&bridge, &QmlSessionBridge::statsChanged);
+    REQUIRE(pumpUntil([&] { return !bridge.resumeItems().isEmpty(); }, 3000));
+    CHECK(changed.count() > 0);
+    CHECK(bridge.resumeItems().first().toMap().value(QStringLiteral("infoHash")).toString() == hash);
+    bridge.forgetGame(hash);
+}
