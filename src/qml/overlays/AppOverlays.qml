@@ -229,6 +229,78 @@ Item {
             else if (a === "downloads") host.currentPage = 0
         }
     }
+    // The wizard's picture of the app needs a library, or grid and list look
+    // the same; someone who just installed has none. While the wizard is open
+    // and the library is empty, Downloads shows a sample made of what is
+    // trending in Find (posters by URL from TMDB and IGDB, as Find shows
+    // them), and goes back to the real, empty one when it closes.
+    ListModel { id: wizardSample }
+    function fillWizardSample() {
+        wizardSample.clear()
+        if (typeof discovery === "undefined" || !discovery) return
+        var rows = discovery.rows || []
+        var picked = [], seen = {}
+        // one at a time from each row, so movies, series and games mix
+        for (var round = 0; round < 8 && picked.length < 10; ++round) {
+            for (var r = 0; r < rows.length && picked.length < 10; ++r) {
+                var it = (rows[r].items || [])[round]
+                if (it && it.poster && it.title && !seen[it.poster]) { seen[it.poster] = true; picked.push(it) }
+            }
+        }
+        // what a lived-in library looks like: some seeding, some on the way
+        var looks = [
+            { k: "seeding",     p: 1.0,  s: "state_seeding",     up: 1260000, down: 0 },
+            { k: "downloading", p: 0.62, s: "state_downloading", up: 0, down: 8400000 },
+            { k: "completed",   p: 1.0,  s: "state_completed",   up: 0, down: 0 },
+            { k: "seeding",     p: 1.0,  s: "state_seeding",     up: 495000, down: 0 },
+            { k: "downloading", p: 0.31, s: "state_downloading", up: 0, down: 3100000 },
+            { k: "paused",      p: 0.48, s: "state_paused",      up: 0, down: 0 },
+            { k: "seeding",     p: 1.0,  s: "state_seeding",     up: 141000, down: 0 },
+            { k: "completed",   p: 1.0,  s: "state_completed",   up: 0, down: 0 }
+        ]
+        var sizes = [2.4, 1.6, 41.2, 3.1, 8.7, 0.9, 54.6, 2.2, 1.4, 12.5]
+        function rate(b) { return b > 0 ? (b >= 1000000 ? (b / 1000000).toFixed(1) + " MB/s" : Math.round(b / 1000) + " KB/s") : "" }
+        for (var i = 0; i < picked.length; ++i) {
+            var w = picked[i], l = looks[i % looks.length], gb = sizes[i % sizes.length]
+            var game = w.type === "game"
+            wizardSample.append({
+                torrentName: w.title, metaTitle: w.title, stateKey: l.k, progress: l.p,
+                posterPath: w.poster, stateString: i18n.t(l.s), stateDetail: "", stateDetailShort: "",
+                fileKind: game ? "game" : "video", category: "", autoCategory: "",
+                size: gb.toFixed(1) + " GB", sizeBytes: gb * 1073741824,
+                downloaded: (gb * l.p).toFixed(1) + " GB",
+                downSpeed: rate(l.down), upSpeed: rate(l.up), downRate: l.down, upRate: l.up,
+                numPeers: l.down > 0 ? 24 : 0, numSeeds: l.down > 0 ? 61 : 0, ratio: l.k === "seeding" ? 1.4 : 0,
+                availability: 1, eta: "", infoHash: "sample-" + i, playable: !game && l.p >= 1,
+                year: Number(w.year) || 0, genres: "", queuePos: -1,
+                season: 0, episode: 0, showTmdb: 0,
+                isGroup: false, groupCount: 0, groupExpanded: false, groupChild: false
+            })
+        }
+    }
+    function useWizardSample(on) {
+        var lv = host.libraryViewItem
+        if (!lv) return
+        if (on && typeof session !== "undefined" && session.torrentCount === 0) {
+            if (wizardSample.count === 0) fillWizardSample()
+            if (wizardSample.count === 0 && typeof discovery !== "undefined" && discovery) discovery.load()
+            if (wizardSample.count > 0) lv.modelOverride = wizardSample
+        } else if (lv.modelOverride === wizardSample) {
+            lv.modelOverride = null
+        }
+    }
+    Connections {
+        target: welcomeWizard
+        function onOpenedChanged() { root.useWizardSample(welcomeWizard.opened) }
+    }
+    Connections {
+        target: typeof discovery !== "undefined" ? discovery : null
+        ignoreUnknownSignals: true
+        // the catalog arrived after the wizard opened
+        function onRowsChanged() {
+            if (welcomeWizard.opened && wizardSample.count === 0) root.useWizardSample(true)
+        }
+    }
     WelcomeWizard {
         id: welcomeWizard
         topInset: host.frameless ? 32 : 0

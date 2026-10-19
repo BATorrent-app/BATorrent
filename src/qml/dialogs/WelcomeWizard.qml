@@ -34,9 +34,27 @@ Item {
             DialogStack.push(wiz)
             step = 0
             refresh()
+            retakePreview()
         } else DialogStack.pop(wiz)
     }
     Component.onDestruction: DialogStack.pop(wiz)
+
+    // the preview's picture, retaken after a choice: at once, once the
+    // change has animated in, and once more for posters loading late
+    property int shotsLeft: 0
+    function retakePreview() { shotsLeft = 3; shotTimer.interval = 60; shotTimer.restart() }
+    Timer {
+        id: shotTimer
+        onTriggered: {
+            if (!wiz.opened) return
+            pvShot.scheduleUpdate()
+            if (--wiz.shotsLeft > 0) { interval = wiz.shotsLeft === 2 ? 450 : 2500; restart() }
+        }
+    }
+    onStepChanged: retakePreview()
+    Connections { target: Theme; ignoreUnknownSignals: true; function onKeyChanged() { wiz.retakePreview() } }
+    Connections { target: typeof i18n !== "undefined" ? i18n : null; ignoreUnknownSignals: true; function onLanguageChanged() { wiz.retakePreview() } }
+    Connections { target: typeof settings !== "undefined" ? settings : null; ignoreUnknownSignals: true; function onChanged() { wiz.retakePreview() } }
 
     signal accepted()      // finished: the host offers the tour
     signal rejected()      // closed early
@@ -565,12 +583,17 @@ Item {
                     layer.smooth: true
                     layer.mipmap: true
                     layer.textureSize: Qt.size(width * 2, height * 2)
+                    // A picture of the app, not a live mirror: speeds ticking
+                    // and hovers moving inside a preview read as something to
+                    // interact with. It is taken again after every choice, a
+                    // few times over, so a theme's fade and late posters land.
                     ShaderEffectSource {
+                        id: pvShot
                         anchors.fill: parent
                         anchors.margins: 1
                         sourceItem: wiz.opened ? wiz.appView : null
                         sourceRect: Qt.rect(0, wiz.topInset, pv.srcW, pv.srcH)
-                        live: true
+                        live: false
                         hideSource: false
                         smooth: true
                         mipmap: true

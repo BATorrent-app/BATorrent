@@ -904,6 +904,8 @@ Window {
     property alias addAddonDlg: overlays.addAddonDlg
     property alias releaseNotesDlg: overlays.releaseNotesDlg
     property alias welcomeDlg: overlays.welcomeDlg
+    // the Downloads grid/list, for the setup wizard's sample library
+    readonly property var libraryViewItem: libraryChrome.libraryView
     property alias aboutDlg: overlays.aboutDlg
     property alias inspectorDlg: overlays.inspectorDlg
     property alias pairingDlg: overlays.pairingDlg
