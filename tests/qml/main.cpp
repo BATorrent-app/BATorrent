@@ -14,6 +14,8 @@
 #include <QQmlEngine>
 #include <QQmlContext>
 #include <QString>
+#include <QStringList>
+#include <cstdio>
 #include <QtQml/qqml.h>
 
 #include "bridges/isolatedmediaplayer.h"
@@ -60,6 +62,40 @@ public slots:
     }
 };
 
-QUICK_TEST_MAIN_WITH_SETUP(batorrent_qml, TestSetup)
+// QML reports its errors as warnings and carries on, so a binding loop or a
+// TypeError never failed a test: the suite passed while the app logged them.
+// They fail the run now. (QString::arg's "argument missing" is left out: the
+// i18n stub above hands back keys without placeholders.)
+namespace {
+QtMessageHandler g_previous = nullptr;
+QStringList g_qmlErrors;
+void failOnQmlErrors(QtMsgType type, const QMessageLogContext &ctx, const QString &msg)
+{
+    static const QStringList kinds = {
+        QStringLiteral("Binding loop detected"), QStringLiteral("TypeError:"),
+        QStringLiteral("ReferenceError:"), QStringLiteral("Unable to assign"),
+        QStringLiteral("Cannot read property"), QStringLiteral("is not a function"),
+        QStringLiteral("non-existent property"), QStringLiteral("is not a type"),
+        QStringLiteral("failed to load component") };
+    if (type == QtWarningMsg || type == QtCriticalMsg)
+        for (const QString &k : kinds)
+            if (msg.contains(k)) { g_qmlErrors << msg; break; }
+    if (g_previous) g_previous(type, ctx, msg);
+}
+}
+
+int main(int argc, char **argv)
+{
+    QTEST_SET_MAIN_SOURCE_PATH
+    g_previous = qInstallMessageHandler(failOnQmlErrors);
+    TestSetup setup;
+    int rc = quick_test_main_with_setup(argc, argv, "batorrent_qml", QUICK_TEST_SOURCE_DIR, &setup);
+    if (!g_qmlErrors.isEmpty()) {
+        fprintf(stderr, "\nQML errors during the run (%lld):\n", qint64(g_qmlErrors.size()));
+        for (const QString &e : g_qmlErrors) fprintf(stderr, "  %s\n", qPrintable(e));
+        if (rc == 0) rc = 1;
+    }
+    return rc;
+}
 
 #include "main.moc"
