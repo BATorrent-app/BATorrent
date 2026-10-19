@@ -2102,5 +2102,9 @@
   "find_n_releases_1": "1 Release",
   "find_results_from_1": "1 Ergebnis für %2 · von TMDB",
   "engine_restarting": "Die Torrent-Engine ist ausgefallen und startet neu",
-  "engine_back": "Die Torrent-Engine läuft wieder"
+  "engine_back": "Die Torrent-Engine läuft wieder",
+  "cat_music": "Musik",
+  "cat_images": "Bilder",
+  "cat_documents": "Dokumente",
+  "cat_torrent": "Torrent-Dateien"
 }

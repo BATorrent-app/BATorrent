@@ -179,3 +179,20 @@ TEST_CASE("removedHistoryHashesToPrune keeps newest 50", "[sessionresume]") {
     REQUIRE(SessionResume::removedHistoryHashesToPrune(sorted, 53).isEmpty());
     REQUIRE(SessionResume::removedHistoryHashesToPrune({}, 50).isEmpty());
 }
+
+TEST_CASE("removedHistoryHashesToPrune also drops what is older than the limit", "[sessionresume]") {
+    const qint64 day = 24 * 3600, now = 100 * day;
+    // oldest first: two from long ago, one from last week
+    const std::vector<std::pair<qint64, QString>> sorted = {
+        { now - 90 * day, QStringLiteral("a") },
+        { now - 31 * day, QStringLiteral("b") },
+        { now - 7 * day,  QStringLiteral("c") },
+    };
+    const QStringList prune = SessionResume::removedHistoryHashesToPrune(sorted, 50, now, 30 * day);
+    REQUIRE(prune.size() == 2);
+    REQUIRE(prune.contains("a"));
+    REQUIRE(prune.contains("b"));
+    // the count cap still applies on its own
+    REQUIRE(SessionResume::removedHistoryHashesToPrune(sorted, 1, now, 365 * day) == QStringList{"a", "b"});
+}
+

@@ -18,6 +18,9 @@ namespace SessionResume {
 
 inline constexpr char kIncompleteSuffix[] = ".!bt";
 inline constexpr int kRemovedHistoryKeep = 50;
+// "Recently removed" means recently: past this a removed torrent is not
+// offered back, and its cover and metadata stop being kept for it.
+inline constexpr qint64 kRemovedHistoryMaxAgeSecs = 30LL * 24 * 3600;
 
 QString resumeFileName(const QString &hash);
 QString corruptSidecarName(const QString &resumeFileName);
@@ -107,5 +110,9 @@ bool shouldEmitTorrentFinished(bool downloadedThisSession, bool completedAtStart
 QStringList removedHistoryHashesToPrune(
     const std::vector<std::pair<qint64, QString>> &sortedOldestFirst,
     int keep = kRemovedHistoryKeep);
+// The same, and also every entry removed more than maxAgeSecs before nowSecs.
+QStringList removedHistoryHashesToPrune(
+    const std::vector<std::pair<qint64, QString>> &sortedOldestFirst,
+    int keep, qint64 nowSecs, qint64 maxAgeSecs);
 
 } // namespace SessionResume

@@ -182,6 +182,18 @@ QVariant QmlPosterModel::data(const QModelIndex &index, int role) const
         case ContentType::Game:   return QStringLiteral("Games");
         case ContentType::Unknown: break;
         }
+        // Not a title: what kind of file it is (an installer, an archive, a
+        // disc image, music). The kind already worked out for the tile when it
+        // was drawn, else the name's own extension (a single-file torrent's).
+        {
+            QString ext = hash.isEmpty() ? QString() : m_fileKindCache.value(hash);
+            if (ext.isEmpty()) {
+                const int dot = info.name.lastIndexOf(QLatin1Char('.'));
+                if (dot > 0 && info.name.size() - dot <= 9) ext = info.name.mid(dot + 1);
+            }
+            const QString byType = categoryForExtension(ext);
+            if (!byType.isEmpty()) return byType;
+        }
         return QString();
     }
     case FileKindRole: {
@@ -572,11 +584,41 @@ int QmlTorrentFilterProxy::mapFromSource(int sourceRow) const
     return QSortFilterProxyModel::mapFromSource(src).row();
 }
 
+// The built-in category a file type belongs to, by its extension; empty for
+// video (named by what it is: a movie, an episode) and anything unknown.
+QString QmlPosterModel::categoryForExtension(const QString &extension)
+{
+    static const QHash<QString, QString> map = [] {
+        QHash<QString, QString> m;
+        auto put = [&m](const char *cat, std::initializer_list<const char *> exts) {
+            for (const char *e : exts) m.insert(QLatin1String(e), QLatin1String(cat));
+        };
+        // disc images sit with archives: both are a container to open (Sherwan)
+        put("Compressed", {"zip", "rar", "7z", "tar", "gz", "tgz", "xz", "bz2", "zst", "cab",
+                           "iso", "img", "bin", "cue", "nrg", "mdf", "dmg", "vhd", "vhdx"});
+        put("Apps", {"exe", "msi", "msix", "appx", "apk", "appimage", "deb", "rpm", "pkg", "bat", "jar"});
+        put("Music", {"mp3", "flac", "wav", "ogg", "oga", "m4a", "aac", "opus", "wma", "alac", "ape", "aiff"});
+        put("Images", {"jpg", "jpeg", "png", "gif", "webp", "bmp", "tif", "tiff", "heic", "avif", "svg", "psd", "raw"});
+        put("Documents", {"pdf", "epub", "mobi", "azw3", "djvu", "doc", "docx", "odt", "rtf", "txt",
+                          "xls", "xlsx", "ods", "csv", "ppt", "pptx", "odp", "cbz", "cbr"});
+        put("Torrent", {"torrent"});
+        return m;
+    }();
+    return map.value(extension.toLower());
+}
+
 QString QmlTorrentFilterProxy::effectiveCategory(const QModelIndex &idx) const
 {
     const QAbstractItemModel *src = sourceModel();
     if (!src) return {};
     QString cat = src->data(idx, QmlPosterModel::CategoryRole).toString();
+    // A direct download carries its file type as its category ("zip",
+    // "pdf"), for the chip on its tile: no category in the menu is called
+    // that, so it was in none. Its type's category is where it belongs.
+    if (!cat.isEmpty() && cat == cat.toLower() && cat.size() <= 8) {
+        const QString byType = QmlPosterModel::categoryForExtension(cat);
+        if (!byType.isEmpty()) return byType;
+    }
     if (cat.isEmpty())
         cat = src->data(idx, QmlPosterModel::AutoCategoryRole).toString();
     return cat;

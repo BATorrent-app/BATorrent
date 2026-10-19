@@ -60,8 +60,11 @@ Window {
     // current page of the content stack (0 Downloads · 1 Find · 2 HUB ·
     // 3 Settings).
     property int currentPage: 0
+    // coming back to the window: no hidden field should hold the keys
+    onActiveChanged: if (active) dropHiddenTextFocus()
     onCurrentPageChanged: {
         clearFilterFocus()
+        Qt.callLater(win.dropHiddenTextFocus)   // once the old page has hidden
         if (currentPage !== 1) searchPage.returnPage = -1
         if (currentPage !== 2) hubPage.gameReturnPage = -1
         // the pages visited, for back/forward in the title strip: a page
@@ -269,6 +272,7 @@ Window {
             if (framelessLoader.item) framelessLoader.item.attach()
             win.restoreSize()
             if (!startHidden) win.visible = true
+            Qt.callLater(win.dropHiddenTextFocus)
             // and once more after the first show: the frame only really comes
             // off when the native window exists, and takes its caption with it
             Qt.callLater(win.restoreSize)
@@ -385,7 +389,7 @@ Window {
         var p = item.mapToItem(ref, 0, 0)
         return Qt.rect(p.x, p.y, item.width, item.height)
     }
-    readonly property var presetCats: ["Apps", "Games", "Movies", "Series", "Compressed"]
+    readonly property var presetCats: ["Apps", "Games", "Movies", "Series", "Compressed", "Music", "Images", "Documents", "Torrent"]
     property int detailTab: 0   // 0 Geral · 1 Peers · 2 Arquivos · 3 Trackers · 4 Pedaços
     property bool detailsCollapsed: typeof settings !== "undefined" && settings.getBool("detailsCollapsed")
     function toggleDetailsCollapsed() {
@@ -478,7 +482,22 @@ Window {
     // The downloads filter keeps activeFocus (and its accent ring) until
     // something else claims it. Every gesture that means "I'm done typing":
     // picking a torrent, clicking blank space, leaving the page: routes here.
-    function clearFilterFocus() { if (libraryChrome.filterBar) libraryChrome.filterBar.clearSearchFocus() }
+    function clearFilterFocus() {
+        if (libraryChrome.filterBar) libraryChrome.filterBar.clearSearchFocus()
+        dropHiddenTextFocus()
+    }
+    // A text field keeps the keyboard focus when its page is hidden (Qt keeps
+    // focus on invisible items), and a field with the focus takes Ctrl+A and
+    // Ctrl+V before the app's shortcuts see them: after a visit to Find, both
+    // did nothing on Downloads until something else took the focus.
+    function dropHiddenTextFocus() {
+        var f = win.activeFocusItem
+        if (!f || f.cursorPosition === undefined || f.visible) return
+        // the field itself gives it up: focusing the window's root alone hands
+        // the focus straight back to the field its scope remembers
+        f.focus = false
+        if (win.activeFocusItem === f) win.contentItem.forceActiveFocus()
+    }
 
     function selectRow(proxyRow, mods) { library.selectRow(proxyRow, mods) }
     function isRowSelected(proxyRow) { return library.isRowSelected(proxyRow) }
@@ -494,7 +513,7 @@ Window {
     // four built-ins the menu already lists statically
     function customCategories() {
         if (typeof session === "undefined") return []
-        var builtins = ["Apps", "Games", "Movies", "Series", "Compressed"]
+        var builtins = win.presetCats
         return session.categories().filter(function (c) {
             return c.length > 0 && builtins.indexOf(c) < 0
         })
@@ -509,6 +528,10 @@ Window {
         // "Apps" stays the stored value on purpose: it is what every existing
         // torrent already carries. Only its label became Software, per Sherwan.
         case "Compressed": return i18n.language, i18n.t("cat_compressed")
+        case "Music":     return i18n.language, i18n.t("cat_music")
+        case "Images":    return i18n.language, i18n.t("cat_images")
+        case "Documents": return i18n.language, i18n.t("cat_documents")
+        case "Torrent":   return i18n.language, i18n.t("cat_torrent")
         default:       return value   // custom category: show as the user typed it
         }
     }

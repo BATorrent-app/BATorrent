@@ -854,7 +854,10 @@ int MetadataResolver::pruneOrphans(const QSet<QString> &keep)
         QDir dir(d.first);
         if (!dir.exists()) continue;
         const QStringList names = dir.entryList({ d.second }, QDir::Files);
-        for (const QString &orphan : MetadataMatch::orphanCacheFiles(names, keep)) {
+        const QStringList orphans = MetadataMatch::orphanCacheFiles(names, keep);
+        qInfo().noquote() << "[metadata] prune" << dir.path() << ":" << names.size() << "files," << keep.size()
+                          << "kept hashes," << orphans.size() << "orphans";
+        for (const QString &orphan : orphans) {
             // A file already gone is the outcome we wanted, not an error.
             if (dir.remove(orphan)) ++gone;
         }

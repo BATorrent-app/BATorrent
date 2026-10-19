@@ -16,12 +16,18 @@ Item {
 
     property alias setLocationDlg: setLocationDlg
 
+    // A text field being typed in keeps Ctrl+A and Ctrl+V for itself. Only one
+    // that can be seen and edited: right after start-up the focus can sit in
+    // a field on a page that is not showing (Find's search), and the keys did
+    // nothing until something else took the focus.
+    function typingIn(f) {
+        return !!f && f.cursorPosition !== undefined && f.visible && f.readOnly !== true
+    }
     Shortcut {
         sequence: StandardKey.SelectAll
         context: Qt.ApplicationShortcut
         onActivated: {
-            var f = host.activeFocusItem
-            if (f && f.cursorPosition !== undefined) return
+            if (typingIn(host.activeFocusItem)) return
             host.selectAll()
         }
     }
@@ -29,8 +35,7 @@ Item {
         sequences: [ StandardKey.Paste ]
         context: Qt.ApplicationShortcut
         onActivated: {
-            var f = host.activeFocusItem
-            if (f && f.cursorPosition !== undefined) return
+            if (typingIn(host.activeFocusItem)) return
             if (typeof session !== "undefined") session.smartPaste()
         }
     }

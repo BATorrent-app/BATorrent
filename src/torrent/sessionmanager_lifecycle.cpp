@@ -299,23 +299,8 @@ void SessionManager::removeTorrent(int index, bool deleteFiles, bool permanent)
         meta.setValue("size", static_cast<qint64>(st.total_wanted));
         meta.setValue("removedAt", QDateTime::currentSecsSinceEpoch());
         meta.endGroup();
-        meta.beginGroup("");
-        QStringList groups = meta.childGroups();
-        if (groups.size() > SessionResume::kRemovedHistoryKeep) {
-            std::vector<std::pair<qint64, QString>> sorted;
-            sorted.reserve(static_cast<size_t>(groups.size()));
-            for (const QString &g : groups) {
-                meta.beginGroup(g);
-                sorted.emplace_back(meta.value("removedAt").toLongLong(), g);
-                meta.endGroup();
-            }
-            std::sort(sorted.begin(), sorted.end());
-            for (const QString &oldHash : SessionResume::removedHistoryHashesToPrune(sorted)) {
-                meta.remove(oldHash);
-                QFile::remove(removedDir.filePath(SessionResume::resumeFileName(oldHash)));
-            }
-        }
-        meta.endGroup();
+        meta.sync();
+        pruneRemovedHistory();
         m_perTorrentStopAfter.remove(hash);
         m_perTorrentMaxSeed.remove(hash);
         if (m_perTorrentDownLimit.remove(hash) || m_perTorrentUpLimit.remove(hash)) {
@@ -484,3 +469,29 @@ void SessionManager::applyStorageMode(lt::add_torrent_params &atp)
                                      : lt::storage_mode_sparse;
 }
 
+// Removed torrents stay restorable for a while: the newest fifty, removed in
+// the last thirty days. Run on every removal and once at start, so an old
+// entry goes even when nothing is being removed (and with it the cover and
+// metadata the startup sweep keeps for restorable torrents).
+void SessionManager::pruneRemovedHistory()
+{
+    QDir removedDir(SessionResume::removedHistoryDir(resumeDataDir()));
+    if (!removedDir.exists()) return;
+    QSettings meta(removedDir.filePath("history.ini"), QSettings::IniFormat);
+    std::vector<std::pair<qint64, QString>> sorted;
+    for (const QString &g : meta.childGroups()) {
+        meta.beginGroup(g);
+        sorted.emplace_back(meta.value("removedAt").toLongLong(), g);
+        meta.endGroup();
+    }
+    std::sort(sorted.begin(), sorted.end());
+    const QStringList prune = SessionResume::removedHistoryHashesToPrune(
+        sorted, SessionResume::kRemovedHistoryKeep, QDateTime::currentSecsSinceEpoch(),
+        SessionResume::kRemovedHistoryMaxAgeSecs);
+    for (const QString &oldHash : prune) {
+        meta.remove(oldHash);
+        QFile::remove(removedDir.filePath(SessionResume::resumeFileName(oldHash)));
+    }
+    if (!prune.isEmpty())
+        qInfo() << "[session] removed history: dropped" << prune.size() << "old entries";
+}

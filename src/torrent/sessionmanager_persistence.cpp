@@ -203,6 +203,7 @@ bool SessionManager::persistResumeAlert(const lt::save_resume_data_alert *rd)
 
 void SessionManager::loadResumeData()
 {
+    pruneRemovedHistory();   // before anything asks what can still be restored
     QDir dir(resumeDataDir());
     if (!dir.exists()) return;
 

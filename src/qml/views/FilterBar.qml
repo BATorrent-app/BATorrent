@@ -446,6 +446,10 @@ Rectangle {
                             CatItem { text: win.catLabel("Movies"); count: catFilterMenu.countOf("Movies"); current: controller.catFilter === "Movies"; onTriggered: controller.applyCatFilter("Movies") }
                             CatItem { text: win.catLabel("Apps");   count: catFilterMenu.countOf("Apps");   current: controller.catFilter === "Apps";   onTriggered: controller.applyCatFilter("Apps") }
                             CatItem { text: win.catLabel("Compressed"); count: catFilterMenu.countOf("Compressed"); current: controller.catFilter === "Compressed"; onTriggered: controller.applyCatFilter("Compressed") }
+                            CatItem { text: win.catLabel("Music"); count: catFilterMenu.countOf("Music"); current: controller.catFilter === "Music"; onTriggered: controller.applyCatFilter("Music") }
+                            CatItem { text: win.catLabel("Images"); count: catFilterMenu.countOf("Images"); current: controller.catFilter === "Images"; onTriggered: controller.applyCatFilter("Images") }
+                            CatItem { text: win.catLabel("Documents"); count: catFilterMenu.countOf("Documents"); current: controller.catFilter === "Documents"; onTriggered: controller.applyCatFilter("Documents") }
+                            CatItem { text: win.catLabel("Torrent"); count: catFilterMenu.countOf("Torrent"); current: controller.catFilter === "Torrent"; onTriggered: controller.applyCatFilter("Torrent") }
                             Instantiator {
                                 id: catFilterCustoms
                                 model: []
@@ -456,7 +460,7 @@ Rectangle {
                                     current: controller.catFilter === modelData
                                     onTriggered: controller.applyCatFilter(modelData)
                                 }
-                                onObjectAdded: function(index, object) { catFilterMenu.insertItem(6 + index, object) }
+                                onObjectAdded: function(index, object) { catFilterMenu.insertItem(2 + win.presetCats.length + index, object) }
                                 onObjectRemoved: function(index, object) { catFilterMenu.removeItem(object) }
                             }
                         }

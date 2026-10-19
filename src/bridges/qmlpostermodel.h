@@ -11,6 +11,9 @@ class QmlPosterModel : public QAbstractListModel
 {
     Q_OBJECT
 public:
+    // The built-in category a file type belongs to (Compressed, Apps, Music,
+    // Images, Documents, Torrent), by extension; empty when none fits.
+    static QString categoryForExtension(const QString &extension);
     enum Roles {
         NameRole = Qt::UserRole + 1,
         StateKeyRole,

@@ -12,6 +12,7 @@
 // SessionManager or the UI. Torrent rows delegate to the inner engine untouched;
 // HTTP rows are served from the HttpDownloadManager and pseudo-hashed "http:<id>".
 
+#include <QHash>
 #include "torrent/iengine.h"
 
 class HttpDownloadManager;
@@ -134,6 +135,11 @@ public:
     bool applySetting(const QString &key, const QVariant &v) override;
 
 private:
+    // A finished direct download whose file is gone from disk (deleted or
+    // moved outside the app) reads as missing, like a torrent does. Asked of
+    // the disk at most every few seconds per item: torrentAt runs every tick.
+    bool finishedFilePresent(HttpDownload *d) const;
+    mutable QHash<QString, QPair<qint64, bool>> m_presence;   // id -> (checked at, present)
     int base() const;                       // inner->torrentCount()
     bool isHttp(int index) const;           // index refers to an HTTP row?
     HttpDownload *httpAt(int index) const;  // the HTTP download for a merged index

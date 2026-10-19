@@ -189,7 +189,7 @@ DMenu {
                 text: modelData
                 onTriggered: session.setSelectedCategory(modelData)
             }
-            onObjectAdded: function(index, object) { catMenu.insertItem(5 + index, object) }
+            onObjectAdded: function(index, object) { catMenu.insertItem(host.presetCats.length + index, object) }
             onObjectRemoved: function(index, object) { catMenu.removeItem(object) }
         }
         DMenuItem { checkable: true; checked: root.cat === "Apps";   text: host.catLabel("Apps");   onTriggered: session.setSelectedCategory("Apps") }
@@ -197,6 +197,10 @@ DMenu {
         DMenuItem { checkable: true; checked: root.cat === "Movies"; text: host.catLabel("Movies"); onTriggered: session.setSelectedCategory("Movies") }
         DMenuItem { checkable: true; checked: root.cat === "Series"; text: host.catLabel("Series"); onTriggered: session.setSelectedCategory("Series") }
         DMenuItem { checkable: true; checked: root.cat === "Compressed"; text: host.catLabel("Compressed"); onTriggered: session.setSelectedCategory("Compressed") }
+        DMenuItem { checkable: true; checked: root.cat === "Music"; text: host.catLabel("Music"); onTriggered: session.setSelectedCategory("Music") }
+        DMenuItem { checkable: true; checked: root.cat === "Images"; text: host.catLabel("Images"); onTriggered: session.setSelectedCategory("Images") }
+        DMenuItem { checkable: true; checked: root.cat === "Documents"; text: host.catLabel("Documents"); onTriggered: session.setSelectedCategory("Documents") }
+        DMenuItem { checkable: true; checked: root.cat === "Torrent"; text: host.catLabel("Torrent"); onTriggered: session.setSelectedCategory("Torrent") }
         DMenuSep {}
         DMenuItem { checkable: true; checked: root.cat === ""; text: (i18n.language, i18n.t("category_none")); onTriggered: session.setSelectedCategory("") }
         DMenuItem { text: (i18n.language, i18n.t("ctx_category_other")); onTriggered: inputPrompt.openWith(i18n.t("ctx_category"), i18n.t("prompt_category_name"), root.cat, i18n.t("prompt_category_eg"), function(t){ session.setSelectedCategory(t) }) }

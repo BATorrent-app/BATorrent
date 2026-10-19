@@ -734,6 +734,7 @@ private:
     bool m_missingProbeRunning = false;
     qint64 m_lastMissingProbe = 0;
     void checkMissingFiles();
+    void pruneRemovedHistory();   // keep the newest 50, removed within 30 days
     // Pausing on confirmed-missing data stops the silent re-download of a
     // torrent whose files the user deleted on purpose. Torrents paused this way
     // are remembered so a manual resume is not undone on the next probe.

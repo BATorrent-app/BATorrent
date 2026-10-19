@@ -2102,5 +2102,9 @@
   "find_n_releases_1": "リリース 1 件",
   "find_results_from_1": "%2 の結果 1 件 · TMDB より",
   "engine_restarting": "トレントエンジンが停止したため、再起動しています",
-  "engine_back": "トレントエンジンが復帰しました"
+  "engine_back": "トレントエンジンが復帰しました",
+  "cat_music": "音楽",
+  "cat_images": "画像",
+  "cat_documents": "ドキュメント",
+  "cat_torrent": "トレントファイル"
 }

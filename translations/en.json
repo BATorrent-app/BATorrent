@@ -2102,5 +2102,9 @@
   "find_n_releases_1": "1 release",
   "find_results_from_1": "1 result for %2 · from TMDB",
   "engine_restarting": "The torrent engine stopped and is starting again",
-  "engine_back": "The torrent engine is back"
+  "engine_back": "The torrent engine is back",
+  "cat_music": "Music",
+  "cat_images": "Images",
+  "cat_documents": "Documents",
+  "cat_torrent": "Torrent files"
 }

@@ -236,8 +236,11 @@ function build(name) {
         p.amber = p.up
         p.seedLow = hexOf(c.warn[0] - 0.04, c.warn[1], c.warn[2])
         // the boards' line colour and its strengths for the softer variants
+        // On the light themes the same strengths vanish: dark ink at 12% on
+        // a near-white panel left Settings' section borders unseen.
         var hairInk = hexOf(c.hair[0], c.hair[1], c.hair[2]), ha = c.hair[3]
-        p.hair = alpha(hairInk, ha); p.hairSoft = alpha(hairInk, ha * 0.55)
+        p.hair = alpha(hairInk, t.light ? ha * 1.45 : ha)
+        p.hairSoft = alpha(hairInk, ha * (t.light ? 0.95 : 0.55))
         p.track = alpha(hairInk, ha * 1.2); p.hover2 = alpha(hairInk, 0.08)
         p.hover = alpha(hairInk, 0.045); p.sel = alpha(p.accent, 0.12)
     }

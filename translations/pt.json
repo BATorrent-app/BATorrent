@@ -2102,5 +2102,9 @@
   "find_n_releases_1": "1 lançamento",
   "find_results_from_1": "1 resultado para %2 · do TMDB",
   "engine_restarting": "O motor de torrents parou e está reiniciando",
-  "engine_back": "O motor de torrents voltou"
+  "engine_back": "O motor de torrents voltou",
+  "cat_music": "Música",
+  "cat_images": "Imagens",
+  "cat_documents": "Documentos",
+  "cat_torrent": "Arquivos torrent"
 }

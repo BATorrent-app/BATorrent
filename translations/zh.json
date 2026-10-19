@@ -2102,5 +2102,9 @@
   "find_n_releases_1": "1 个版本",
   "find_results_from_1": "%2 的 1 个结果 · 来自 TMDB",
   "engine_restarting": "种子引擎已停止，正在重新启动",
-  "engine_back": "种子引擎已恢复"
+  "engine_back": "种子引擎已恢复",
+  "cat_music": "音乐",
+  "cat_images": "图片",
+  "cat_documents": "文档",
+  "cat_torrent": "种子文件"
 }

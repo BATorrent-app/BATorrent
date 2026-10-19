@@ -8,6 +8,7 @@
 #include "services/platform/translator.h"
 
 #include <QFileInfo>
+#include <QDateTime>
 #include <QSet>
 
 namespace {
@@ -57,6 +58,16 @@ HttpDownload *HttpMergeEngine::httpAt(int index) const { return m_http->at(index
 
 int HttpMergeEngine::torrentCount() const { return base() + m_http->count(); }
 
+bool HttpMergeEngine::finishedFilePresent(HttpDownload *d) const
+{
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    auto it = m_presence.find(d->id());
+    if (it != m_presence.end() && now - it->first < 5000) return it->second;
+    const bool present = QFileInfo::exists(d->finalPath());
+    m_presence.insert(d->id(), qMakePair(now, present));
+    return present;
+}
+
 TorrentInfo HttpMergeEngine::torrentAt(int index) const
 {
     if (!isHttp(index)) return m_inner->torrentAt(index);
@@ -91,6 +102,7 @@ TorrentInfo HttpMergeEngine::torrentAt(int index) const
         info.completed = true;
         info.progress = 1.0f;
         info.stateString = tr_("state_completed");
+        info.filesMissing = !finishedFilePresent(d);
         break;
     case HttpDownload::State::Paused:
         info.paused = true;

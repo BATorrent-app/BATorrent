@@ -184,6 +184,17 @@ bool shouldEmitTorrentFinished(bool downloadedThisSession, bool completedAtStart
 
 QStringList removedHistoryHashesToPrune(
     const std::vector<std::pair<qint64, QString>> &sortedOldestFirst,
+    int keep, qint64 nowSecs, qint64 maxAgeSecs)
+{
+    QStringList prune = removedHistoryHashesToPrune(sortedOldestFirst, keep);
+    for (const auto &e : sortedOldestFirst)
+        if (nowSecs - e.first > maxAgeSecs && !prune.contains(e.second))
+            prune.append(e.second);
+    return prune;
+}
+
+QStringList removedHistoryHashesToPrune(
+    const std::vector<std::pair<qint64, QString>> &sortedOldestFirst,
     int keep)
 {
     QStringList prune;

@@ -26,6 +26,7 @@
 #include <libtorrent/bencode.hpp>
 
 #include "torrent/sessionmanager.h"
+#include "bridges/qmlpostermodel.h"
 #include "services/metadata/metadataresolver.h"
 #include "services/games/playlog.h"
 #include "services/discovery/gamesourcemanager.h"
@@ -996,4 +997,21 @@ TEST_CASE("Poster model: the state key and the state label agree on every row",
     CHECK(model.data(doneRow, QmlPosterModel::StateStringRole).toString()
           == tr_(QStringLiteral("state_completed")));
     CHECK(model.data(doneRow, QmlPosterModel::StateStringRole).toString() != seeding);
+}
+
+// A file that is not a title still has a place: Sherwan's installers, disc
+// images and archives sat in no category, so only "Movies" ever showed.
+TEST_CASE("categoryForExtension sorts files that are not titles", "[bridge][category]")
+{
+    CHECK(QmlPosterModel::categoryForExtension("iso") == "Compressed");   // with the archives, as asked
+    CHECK(QmlPosterModel::categoryForExtension("ZIP") == "Compressed");
+    CHECK(QmlPosterModel::categoryForExtension("exe") == "Apps");
+    CHECK(QmlPosterModel::categoryForExtension("flac") == "Music");
+    CHECK(QmlPosterModel::categoryForExtension("png") == "Images");
+    CHECK(QmlPosterModel::categoryForExtension("pdf") == "Documents");
+    CHECK(QmlPosterModel::categoryForExtension("torrent") == "Torrent");
+    // a video is named by what it is (a movie, an episode), not by its type
+    CHECK(QmlPosterModel::categoryForExtension("mkv").isEmpty());
+    CHECK(QmlPosterModel::categoryForExtension("").isEmpty());
+    CHECK(QmlPosterModel::categoryForExtension("nfo").isEmpty());
 }
