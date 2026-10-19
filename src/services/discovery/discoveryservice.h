@@ -64,7 +64,8 @@ public:
     Q_INVOKABLE void fetchGameRecommendations(const QString &gameName);
     // Art, stills, maker and Steam appid for an owned game, by name. Cached per
     // session. Emits gameDetailsReady ({} when IGDB has no match).
-    Q_INVOKABLE void fetchGameDetails(const QString &gameName);
+    // first: ahead of the queue (a page's banner, before the tiles under it).
+    Q_INVOKABLE void fetchGameDetails(const QString &gameName, bool first = false);
     // Episode list (number, name, air date) for a TV season. Emits episodesReady.
     Q_INVOKABLE void fetchEpisodes(int tmdbId, int season);
     // Backdrop/still URLs for a title (text-free ones first). Emits backdropsReady.

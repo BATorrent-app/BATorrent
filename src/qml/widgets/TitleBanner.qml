@@ -32,6 +32,23 @@ Item {
     readonly property alias textBlock: textCol
     readonly property alias textShift: shift
     readonly property alias art: img
+    // A game has no TMDB id: its lettering is Steam's, asked for by name the
+    // way the tiles ask, and again when the banner moves to another title.
+    readonly property bool isGameItem: !!item && (item.type || "") === "game"
+    readonly property var gameDisco: typeof discovery !== "undefined" ? discovery : null
+    property string gameLogo: ""
+    function askGameLogo() {
+        gameLogo = ""
+        if (isGameItem && gameDisco && item.title) gameDisco.fetchGameDetails(item.title, true)
+    }
+    onItemChanged: askGameLogo()
+    Connections {
+        target: banner.isGameItem ? banner.gameDisco : null
+        ignoreUnknownSignals: true
+        function onGameDetailsReady(name, d) {
+            if (banner.item && name === (banner.item.title || "").trim() && d.steamLogo) banner.gameLogo = d.steamLogo
+        }
+    }
     signal primaryClicked()
     signal secondaryClicked()
 
@@ -99,6 +116,7 @@ Item {
             tmdbId: banner.item ? (banner.item.tmdbId || 0) : 0
             type: banner.item ? (banner.item.type || "") : ""
             title: banner.item ? (banner.item.title || banner.item.name || "") : ""
+            fixedLogo: banner.gameLogo
         }
         Row {
             spacing: 14

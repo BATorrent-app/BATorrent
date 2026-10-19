@@ -2098,5 +2098,7 @@
   "vpn_legacy_action": "削除",
   "vpn_legacy_done": "古い VPN トンネルを削除しました",
   "vpn_legacy_failed": "古い VPN トンネルはまだ残っています",
-  "vpn_legacy_failed_body": "管理者権限がないと削除できません。次回の起動時にもう一度確認します。"
+  "vpn_legacy_failed_body": "管理者権限がないと削除できません。次回の起動時にもう一度確認します。",
+  "find_n_releases_1": "リリース 1 件",
+  "find_results_from_1": "%2 の結果 1 件 · TMDB より"
 }

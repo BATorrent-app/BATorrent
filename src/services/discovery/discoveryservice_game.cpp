@@ -59,7 +59,7 @@ void DiscoveryService::fetchGameRecommendations(const QString &gameName)
     });
 }
 
-void DiscoveryService::fetchGameDetails(const QString &gameName)
+void DiscoveryService::fetchGameDetails(const QString &gameName, bool first)
 {
     const QString key = gameName.trimmed();
     if (key.isEmpty()) { emit gameDetailsReady(gameName, {}); return; }
@@ -76,7 +76,12 @@ void DiscoveryService::fetchGameDetails(const QString &gameName)
         QTimer::singleShot(0, this, [this, gameName]() { emit gameDetailsReady(gameName, {}); });
         return;
     }
-    if (!m_gameDetailsQueue.contains(key)) m_gameDetailsQueue.append(key);
+    if (first) {
+        m_gameDetailsQueue.removeAll(key);
+        m_gameDetailsQueue.prepend(key);
+    } else if (!m_gameDetailsQueue.contains(key)) {
+        m_gameDetailsQueue.append(key);
+    }
     runGameDetailsQueue();
 }
 
@@ -103,7 +108,7 @@ void DiscoveryService::runGameDetailsQueue()
             "screenshots.image_id,artworks.image_id,genres.name,"
             "involved_companies.company.name,involved_companies.developer,"
             "external_games.uid,external_games.category,external_games.external_game_source;"
-            " limit 1;").arg(igdbQuoted(key)).toUtf8();
+            " limit 10;").arg(igdbQuoted(key)).toUtf8();
         QNetworkReply *reply = m_nam->post(req, body);
         connect(reply, &QNetworkReply::finished, this, [this, reply, key, next]() {
             reply->deleteLater();
@@ -113,7 +118,7 @@ void DiscoveryService::runGameDetailsQueue()
                 m_gameDetailsFailedAt.insert(key, QDateTime::currentMSecsSinceEpoch());
                 emit gameDetailsReady(key, {});
             } else {
-                const QVariantMap details = IgdbParse::gameDetails(reply->readAll());
+                const QVariantMap details = IgdbParse::gameDetails(reply->readAll(), key);
                 m_gameDetails.insert(key, details);
                 emit gameDetailsReady(key, details);
             }

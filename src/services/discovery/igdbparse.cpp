@@ -228,20 +228,28 @@ int steamAppId(const QJsonObject &game)
     return 0;
 }
 
-QVariantMap gameDetails(const QByteArray &jsonArray)
+QVariantMap gameDetails(const QByteArray &jsonArray, const QString &wantedName)
 {
+    const QString wanted = wantedName.trimmed().toCaseFolded();
+    QJsonObject pick;
+    int pickScore = -1;
     for (const QJsonObject &o : objectsFromJson(jsonArray)) {
-        if (o.value(QLatin1String("name")).toString().isEmpty()) continue;
-        QVariantMap m = titleRow(o);
-        const int appId = steamAppId(o);
-        m.insert(QStringLiteral("steamAppId"), appId);
-        if (appId > 0) {
-            m.insert(QStringLiteral("steamHero"), SteamStore::heroUrl(appId));
-            m.insert(QStringLiteral("steamLogo"), SteamStore::logoUrl(appId));
-        }
-        return m;
+        const QString name = o.value(QLatin1String("name")).toString();
+        if (name.isEmpty()) continue;
+        const bool sameName = !wanted.isEmpty() && name.trimmed().toCaseFolded() == wanted;
+        const bool onSteam = steamAppId(o) > 0;
+        const int score = (sameName ? 2 : 0) + (onSteam ? 1 : 0);
+        if (score > pickScore) { pick = o; pickScore = score; }   // ties keep IGDB's order
     }
-    return {};
+    if (pickScore < 0) return {};
+    QVariantMap m = titleRow(pick);
+    const int appId = steamAppId(pick);
+    m.insert(QStringLiteral("steamAppId"), appId);
+    if (appId > 0) {
+        m.insert(QStringLiteral("steamHero"), SteamStore::heroUrl(appId));
+        m.insert(QStringLiteral("steamLogo"), SteamStore::logoUrl(appId));
+    }
+    return m;
 }
 
 int pickHypeTypeId(const QByteArray &popularityTypesJson, int fallback)

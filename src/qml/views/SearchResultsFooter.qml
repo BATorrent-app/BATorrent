@@ -40,7 +40,9 @@ Rectangle {
                 if (!api) return ""
                 // the titles a search found: how many, for what, from where
                 if (root.sv.isTitles && !api.searching && root.sv.results.length > 0)
-                    return i18n.t("find_results_from").arg(root.sv.results.length).arg("“" + api.activeQuery + "”")
+                    return root.sv.results.length === 1
+                        ? i18n.t("find_results_from_1").arg("“" + api.activeQuery + "”")
+                        : i18n.t("find_results_from").arg(root.sv.results.length).arg("“" + api.activeQuery + "”")
                 return api.statusText
             }
             color: Theme.t3; font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum

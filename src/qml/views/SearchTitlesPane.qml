@@ -116,7 +116,8 @@ Item {
                             if (o.next) bits.push(i18n.t("find_next_ep").arg(o.next.season).arg(o.next.episode))
                         }
                         if (pane.bestSummary && pane.bestSummary.count > 0)
-                            bits.push(i18n.t("find_n_releases").arg(pane.bestSummary.count))
+                            bits.push(pane.bestSummary.count === 1 ? i18n.t("find_n_releases_1")
+                                                                   : i18n.t("find_n_releases").arg(pane.bestSummary.count))
                         return bits.join(" · ")
                     }
                     primaryLabel: {

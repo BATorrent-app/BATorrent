@@ -156,3 +156,20 @@ TEST_CASE("gameDetails takes the first named record and keeps art without a cove
     REQUIRE(IgdbParse::gameDetails(QByteArrayLiteral("{not json")).isEmpty());
     REQUIRE(IgdbParse::gameDetails(QByteArrayLiteral(R"([{"summary":"x"}])")).isEmpty());
 }
+
+TEST_CASE("gameDetails picks the game, not a fan port named exactly like it", "[igdbparse]") {
+    // IGDB's own order for "Hollow Knight": the Vita fan port first
+    const QByteArray reply = QByteArrayLiteral(R"([
+        {"name":"Hollow Knight","summary":"Unofficial port of the hit game Hollow Knight for PlayStation Vita."},
+        {"name":"Hollow Knight: Silksong","external_games":[{"uid":"1030300","external_game_source":1}]},
+        {"name":"Hollow Knight","summary":"The real one.","external_games":[{"uid":"367520","external_game_source":1}]}
+    ])");
+    const QVariantMap m = IgdbParse::gameDetails(reply, "hollow knight");
+    REQUIRE(m.value("steamAppId").toInt() == 367520);
+    REQUIRE(m.contains("steamLogo"));
+    // without a name to match, Steam still beats the fan port
+    REQUIRE(IgdbParse::gameDetails(reply).value("steamAppId").toInt() == 1030300);
+    // the name alone, when nothing is on Steam: still the first of that name
+    const QByteArray noSteam = QByteArrayLiteral(R"([{"name":"Other"},{"name":"Celeste","summary":"a"},{"name":"Celeste","summary":"b"}])");
+    REQUIRE(IgdbParse::gameDetails(noSteam, "Celeste").value("overview").toString() == "a");
+}

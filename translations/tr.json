@@ -2098,5 +2098,7 @@
   "vpn_legacy_action": "Kaldır",
   "vpn_legacy_done": "Eski VPN tüneli kaldırıldı",
   "vpn_legacy_failed": "Eski VPN tüneli hâlâ duruyor",
-  "vpn_legacy_failed_body": "Yönetici izni olmadan kaldırılamaz. Uygulama bir sonraki açılışta tekrar sorar."
+  "vpn_legacy_failed_body": "Yönetici izni olmadan kaldırılamaz. Uygulama bir sonraki açılışta tekrar sorar.",
+  "find_n_releases_1": "1 sürüm",
+  "find_results_from_1": "%2 için 1 sonuç · TMDB'den"
 }

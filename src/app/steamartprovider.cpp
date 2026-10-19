@@ -80,16 +80,20 @@ private:
             g_store.insert(appId, store);
         }
 
-        // The store answered: its path is the truth, and no path means no such
-        // art (no request to a URL that would 404). It did not: the old path,
-        // which still serves games from before the move.
-        const QString url = store.isEmpty() ? SteamStore::legacyArtUrl(appId, kind)
-                                            : SteamStore::assetUrl(store, kind);
-        if (url.isEmpty()) {
+        // The store's path first. It no longer lists library_logo for many
+        // games (Hollow Knight among them) whose logo.png is still on the old
+        // path, so a missing store path, or no store answer, falls back to it.
+        QString url = store.isEmpty() ? QString() : SteamStore::assetUrl(store, kind);
+        QByteArray data = url.isEmpty() ? QByteArray() : fetch(nam, url);
+        if (data.isEmpty()) {
+            url = SteamStore::legacyArtUrl(appId, kind);
+            data = fetch(nam, url);
+        }
+        if (data.isEmpty()) {
             m_error = QStringLiteral("no %1 art for app %2").arg(kind).arg(appId);
             return;
         }
-        if (!m_image.loadFromData(fetch(nam, url))) {
+        if (!m_image.loadFromData(data)) {
             m_error = QStringLiteral("could not load ") + url;
             return;
         }

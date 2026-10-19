@@ -32,10 +32,13 @@ QVariantList titleSearchRows(const QByteArray &jsonArray);
 
 // Steam appid from a game's external_games (0 when IGDB has no Steam record).
 int steamAppId(const QJsonObject &game);
-// /games lookup for one owned game → first named record as a title row plus
-// steamAppId, and steamHero/steamLogo CDN urls when it has one. Cover is not
-// required: the page can stand on art alone.
-QVariantMap gameDetails(const QByteArray &jsonArray);
+// /games lookup for one game by name → the best record as a title row plus
+// steamAppId, and steamHero/steamLogo CDN urls when it has one. IGDB's search
+// ranks fan ports and mods named exactly like the game (an unofficial "Hollow
+// Knight" for the Vita) above it, so the pick is: the name itself with a Steam
+// record, then the name itself, then anything on Steam, then the first named
+// record. Cover is not required: the page can stand on art alone.
+QVariantMap gameDetails(const QByteArray &jsonArray, const QString &wantedName = QString());
 
 // popularity_types: prefer Global Top Sellers → Want to Play → Playing → fallback.
 int pickHypeTypeId(const QByteArray &popularityTypesJson, int fallback = 9);

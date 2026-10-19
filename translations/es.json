@@ -2098,5 +2098,7 @@
   "vpn_legacy_action": "Quitarlo",
   "vpn_legacy_done": "Se quitó el túnel antiguo de la VPN",
   "vpn_legacy_failed": "El túnel antiguo de la VPN sigue ahí",
-  "vpn_legacy_failed_body": "Sin permisos de administrador no se puede quitar. La app volverá a preguntar la próxima vez que se abra."
+  "vpn_legacy_failed_body": "Sin permisos de administrador no se puede quitar. La app volverá a preguntar la próxima vez que se abra.",
+  "find_n_releases_1": "1 versión",
+  "find_results_from_1": "1 resultado para %2 · de TMDB"
 }
