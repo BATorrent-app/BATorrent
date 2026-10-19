@@ -18,6 +18,8 @@
 #include "services/integrations/rssmanager.h"
 #include "services/metadata/metadataresolver.h"
 #include "services/platform/translator.h"
+
+#include <memory>
 #include "services/platform/utils.h"
 #include "services/security/blocklistupdater.h"
 #include "services/security/mediaguard.h"
@@ -132,10 +134,15 @@ AppServices AppServices::create(QApplication &app)
                      telegram, &TelegramNotifier::onTorrentError);
 
     if (svc.ipcEngine) {
+        // Said once per change: the engine reports "up" both when the app
+        // reaches it and when it says hello, so a restart read as two notices,
+        // and as errors, in English.
+        auto engineUp = std::make_shared<bool>(true);
         QObject::connect(svc.ipcEngine, &IpcEngine::engineStatusChanged, svc.notificationBridge,
-                         [nb = svc.notificationBridge](bool up) {
-            nb->onTorrentError(up ? QStringLiteral("Torrent engine reconnected")
-                                  : QStringLiteral("Torrent engine restarting…"));
+                         [nb = svc.notificationBridge, engineUp](bool up) {
+            if (up == *engineUp) return;
+            *engineUp = up;
+            emit nb->notify(up ? tr_("engine_back") : tr_("engine_restarting"), QString(), up ? 3 : 1);
         });
         // a respawned engine knows only the saved settings: hand it the VPN's state
         QObject::connect(svc.ipcEngine, &IpcEngine::engineStatusChanged, &app,

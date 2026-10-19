@@ -79,6 +79,18 @@ Column {
         : catalogue.length > 0 ? catalogue
         : kindLabel(tile.fileKind).length > 0 ? kindLabel(tile.fileKind)
         : i18n.t("state_completed"))
+    // A narrow tile cannot hold "Downloading · 3m" beside "2.11/6.29 GB", and
+    // the state is what was cut ("Down…"). It gives way in order: the time
+    // left goes first, then the size; the state itself is never cut.
+    readonly property string lineShort: (i18n.language, tile.isDownloading && !slow && !tile.isGroup
+                                         ? i18n.t("state_downloading") : line)
+    TextMetrics { id: tmLine; font: lineTxt.font; text: root.line }
+    TextMetrics { id: tmShort; font: lineTxt.font; text: root.lineShort }
+    TextMetrics { id: tmRight; font: rightTxt.font; text: root.rightText }
+    readonly property real room: root.width - 13   // the dot and its gap
+    readonly property real rightNeeds: root.rightText.length > 0 ? tmRight.advanceWidth + 6 : 0
+    readonly property bool fitsFull: tmLine.advanceWidth + rightNeeds <= room
+    readonly property bool fitsShort: tmShort.advanceWidth + rightNeeds <= room
     readonly property string rightText:
           // with repeats the total counts them twice: better none than a wrong one
           tile.isGroup ? (tile.groupRepeats > 0 ? "" : tile.size)
@@ -116,7 +128,7 @@ Column {
             anchors.right: rightTxt.left
             anchors.rightMargin: rightTxt.text.length > 0 ? 6 : 0
             anchors.verticalCenter: parent.verticalCenter
-            text: root.line
+            text: root.fitsFull ? root.line : root.lineShort
             color: root.ink
             font.pixelSize: 13
             font.weight: Font.Medium
@@ -136,7 +148,7 @@ Column {
             id: rightTxt
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
-            text: root.rightText
+            text: root.fitsFull || root.fitsShort ? root.rightText : ""
             color: Theme.t4
             font.pixelSize: 13
             font.family: Theme.fontSans

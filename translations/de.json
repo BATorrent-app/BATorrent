@@ -2100,5 +2100,7 @@
   "vpn_legacy_failed": "Der alte VPN-Tunnel ist noch da",
   "vpn_legacy_failed_body": "Ohne Administratorrechte lässt er sich nicht entfernen. Die App fragt beim nächsten Start erneut.",
   "find_n_releases_1": "1 Release",
-  "find_results_from_1": "1 Ergebnis für %2 · von TMDB"
+  "find_results_from_1": "1 Ergebnis für %2 · von TMDB",
+  "engine_restarting": "Die Torrent-Engine ist ausgefallen und startet neu",
+  "engine_back": "Die Torrent-Engine läuft wieder"
 }

@@ -2100,5 +2100,7 @@
   "vpn_legacy_failed": "The old VPN tunnel is still there",
   "vpn_legacy_failed_body": "Without administrator rights it cannot be removed. The app asks again next time it starts.",
   "find_n_releases_1": "1 release",
-  "find_results_from_1": "1 result for %2 · from TMDB"
+  "find_results_from_1": "1 result for %2 · from TMDB",
+  "engine_restarting": "The torrent engine stopped and is starting again",
+  "engine_back": "The torrent engine is back"
 }

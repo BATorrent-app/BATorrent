@@ -21,7 +21,9 @@ Rectangle {
     // red into a surface: the opposite of the rule the rest of the app follows,
     // where red means something is happening. Red stays for signals; "this option
     // is on" is a state, and state reads fine in neutral.
-    color: on ? Theme.t1 : Theme.field
+    // off on a light theme: a grey track, so the white knob shows (the white
+    // field on a near-white panel hid both)
+    color: on ? Theme.t1 : (Theme.isDark ? Theme.field : Theme.track)
     border.color: on ? "transparent" : Theme.hair
     border.width: 1
 

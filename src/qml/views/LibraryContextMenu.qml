@@ -46,6 +46,9 @@ DMenu {
     readonly property bool isGame: (session.selectedHash, session.selectedIsGame())
     readonly property int gameState: (session.selectedHash, session.selectedGameState())
     readonly property bool done: session.selectedDataDone || session.selectedCompleted
+    // a direct download (a link, not a torrent): once finished it shares
+    // nothing, so there is nothing left to pause or resume
+    readonly property bool directDone: done && !multi && String(session.selectedInfoHash).indexOf("httpdl-") === 0
     readonly property string markKey: isGame || cat === "Games" ? "mark_played"
                                      : (session.selectedHasVideo || cat === "Movies" || cat === "Series") ? "mark_watched"
                                      : "ctx_mark_completed_plain"
@@ -79,14 +82,14 @@ DMenu {
     // the upload, so it says so.
     DMenuItem {
         hideWhenDisabled: true
-        enabled: !session.selectedPaused || root.multi
+        enabled: (!session.selectedPaused || root.multi) && !root.directDone
         iconSrc: "qrc:/icons/pause.svg"
         text: (i18n.language, root.done ? i18n.t("ctx_pause_upload") : i18n.t("tb_pause"))
         onTriggered: session.pauseSelected()
     }
     DMenuItem {
         hideWhenDisabled: true
-        enabled: session.selectedPaused || root.multi
+        enabled: (session.selectedPaused || root.multi) && !root.directDone
         iconSrc: root.done ? "qrc:/icons/upload.svg" : "qrc:/icons/play.svg"
         text: (i18n.language, root.done ? i18n.t("ctx_seed_again") : i18n.t("tb_resume"))
         onTriggered: session.resumeSelected()

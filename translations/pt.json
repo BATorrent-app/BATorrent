@@ -2100,5 +2100,7 @@
   "vpn_legacy_failed": "O túnel antigo da VPN continua lá",
   "vpn_legacy_failed_body": "Sem permissão de administrador não dá para remover. O app pergunta de novo na próxima vez que abrir.",
   "find_n_releases_1": "1 lançamento",
-  "find_results_from_1": "1 resultado para %2 · do TMDB"
+  "find_results_from_1": "1 resultado para %2 · do TMDB",
+  "engine_restarting": "O motor de torrents parou e está reiniciando",
+  "engine_back": "O motor de torrents voltou"
 }

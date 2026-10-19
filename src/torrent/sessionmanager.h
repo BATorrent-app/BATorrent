@@ -751,6 +751,7 @@ private:
     bool m_altSpeedsActive = false;
     bool m_preallocate = false;
     bool m_autoRecheck = false;
+    bool m_emptyAnnounced = false;   // the last tick before an empty library went out
     int m_portStatus = 0;     // 0=checking,1=open,2=firewalled,3=closed
     bool m_listenOk = false;
     bool m_portmapOk = false;

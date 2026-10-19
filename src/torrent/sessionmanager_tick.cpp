@@ -206,8 +206,16 @@ void SessionManager::updateStats()
     checkMissingFiles();
     checkMemoryGuard();
     enforceDownloadQueue();
-    if (!m_torrents.empty())
+    // Quiet while the library is empty, but once more as it empties: with the
+    // last torrent removed no update came, and the app (in split mode, which
+    // reads only what the engine sends) kept the old list and counts.
+    if (!m_torrents.empty()) {
+        m_emptyAnnounced = false;
         emit torrentsUpdated();
+    } else if (!m_emptyAnnounced) {
+        m_emptyAnnounced = true;
+        emit torrentsUpdated();
+    }
 }
 
 void SessionManager::checkSeedRatios()
