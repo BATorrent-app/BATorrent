@@ -329,7 +329,10 @@ SessionManager::SessionManager(QObject *parent)
         }
         setListenPort(port);
     }
-    setKillSwitchEnabled(settings.value("killSwitchEnabled", false).toBool());
+    // Read, not set: the setter saves, and saving the default here wrote "off"
+    // on every start, so the VPN's kill switch (on until the user turns it off)
+    // was never on for anyone.
+    m_killSwitchEnabled = settings.value("killSwitchEnabled", true).toBool();
     setAutoResumeOnReconnect(settings.value("autoResumeOnReconnect", false).toBool());
     m_proxy.loadFromSettings();
     // The in-app VPN was on when the app last closed and the kill switch is

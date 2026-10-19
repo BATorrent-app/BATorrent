@@ -350,7 +350,7 @@ TEST_CASE("SessionManager: initial state", "[unit][session]")
     REQUIRE(session.proxyType() == 0);
     REQUIRE(session.proxyHost().isEmpty());
     REQUIRE(session.ipFilterCount() == 0);
-    REQUIRE(session.killSwitchEnabled() == false);
+    REQUIRE(session.killSwitchEnabled() == true);   // on until the user turns it off, as the VPN page says
     REQUIRE(session.autoResumeOnReconnect() == false);
     REQUIRE(session.schedulerEnabled() == false);
     REQUIRE(session.altSpeedsActive() == false);
