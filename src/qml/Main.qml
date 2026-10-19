@@ -323,7 +323,17 @@ Window {
     // Installs older than 4.8 get the wizard too, not just new ones. 4.8 moved
     // the layout around again and old settings describe an app that isn't there
     // anymore. Only bump this for a release that reshuffles the UI.
-    readonly property int kWizardIntroVersion: 40800
+    // Coming from before this version, an update opens the setup wizard
+    // first (5.0 redid every screen and added the themes the wizard shows
+    // off), then What's new once it closes.
+    readonly property int kWizardIntroVersion: 50000
+    property bool whatsNewAfterWizard: false
+    function wizardClosed() {
+        if (!whatsNewAfterWizard) return
+        whatsNewAfterWizard = false
+        welcomeDlg.mode = "update"
+        welcomeDlg.open()
+    }
     function maybeShowWelcome() {
         if (typeof settings === "undefined") return
         var cur = (typeof themeBridge !== "undefined" && themeBridge.appVersion) ? themeBridge.appVersion : ""
@@ -341,6 +351,7 @@ Window {
             var intro = versionRank(cur) >= win.kWizardIntroVersion
                         && versionRank(last) < win.kWizardIntroVersion
             welcomeDlg.mode = intro ? "welcome" : "update"
+            win.whatsNewAfterWizard = intro
             welcomeDlg.open()
         }
         if (cur.length > 0) settings.set("lastSeenVersion", cur)

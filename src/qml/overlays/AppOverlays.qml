@@ -237,13 +237,15 @@ Item {
         // sensible default and the whole thing is in Help → Setup wizard, so
         // reopening it on each launch was the app arguing with a decision the
         // user already made.
-        onRejected: host.dismissWelcome()
+        onRejected: { host.dismissWelcome(); host.wizardClosed() }
         // "Explore on my own": the tour stays in Help
         onAccepted: {
             host.dismissWelcome()
             if (typeof settings !== "undefined") settings.set("tourSeen", true)
+            host.wizardClosed()
         }
         onTourRequested: {
+            host.whatsNewAfterWizard = false   // the tour has the screen
             host.dismissWelcome()
             if (typeof settings !== "undefined") settings.set("tourSeen", false)
             host.maybeStartTour()
