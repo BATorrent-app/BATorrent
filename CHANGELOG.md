@@ -1,6 +1,6 @@
 # Changelog
 
-## v5.0.0-beta1 (2026-10-19)
+## v5.0.0-beta2 (2026-10-19)
 
 A test build of 5.0. It is a pre-release: the app only offers it to people on
 the beta update track (Settings, Updates). Expect rough edges, and please report
