@@ -51,6 +51,6 @@ Menu {
         }
     }
     exit: Transition {
-        NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; duration: 80; easing.type: Theme.easeIn }
+        NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; duration: Theme.durExit; easing.type: Theme.easeIn }
     }
 }

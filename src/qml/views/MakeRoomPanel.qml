@@ -170,7 +170,7 @@ ModalShell {
                         width: meter.width * root.freedBytes / parent.scale
                         height: parent.height; radius: 4
                         color: parent.enough ? Theme.grn : Theme.warn
-                        Behavior on width { enabled: !Theme.reduceMotion; NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+                        Behavior on width { enabled: !Theme.reduceMotion; NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
                     }
                 }
                 RowLayout {

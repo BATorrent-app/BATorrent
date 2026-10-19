@@ -24,12 +24,17 @@ SOLID = {
     "heart.svg",
 }
 
-# Heavier on purpose: these are drawn small and need the extra weight.
+# Their own weight on purpose: heavier where they are drawn small and need
+# it, lighter where noted.
 HEAVIER = {
     "chevron-bold.svg": "2.4",
     "close-bold.svg": "2.4",
     "lock-solid.svg": "2",
     "lock-open-solid.svg": "2",
+    # Lighter: the player's skip rings hold the "10" as text in the middle,
+    # and at 2.2 the ring crowds the number.
+    "skip-ring-back.svg": "1.9",
+    "skip-ring-fwd.svg": "1.9",
 }
 
 WIDTH_RE = re.compile(r'stroke-width="([0-9.]+)"')

@@ -91,9 +91,9 @@ Item {
             radius: Theme.rad(1)
             color: Theme.accent
             Behavior on x { enabled: indicator.ready && !Theme.reduceMotion
-                NumberAnimation { duration: Theme.durSlower; easing.type: Easing.OutQuart } }
+                NumberAnimation { duration: Theme.durSlower; easing.type: Theme.easeOut } }
             Behavior on width { enabled: indicator.ready && !Theme.reduceMotion
-                NumberAnimation { duration: Theme.durSlower; easing.type: Easing.OutQuart } }
+                NumberAnimation { duration: Theme.durSlower; easing.type: Theme.easeOut } }
         }
     }
 }

@@ -127,18 +127,18 @@ Item {
         NumberAnimation {
             id: turn
             target: ring; property: "rotation"
-            duration: 520; easing.type: Easing.OutCubic
+            duration: Theme.durShow; easing.type: Theme.easeOut
             onFinished: ring.rotation = 0
         }
         SequentialAnimation {
             id: pop
             ParallelAnimation {
-                NumberAnimation { target: sb; property: "scale"; to: 1.14; duration: 120; easing.type: Easing.OutCubic }
-                NumberAnimation { target: flash; property: "opacity"; to: 0.16; duration: 120; easing.type: Easing.OutCubic }
+                NumberAnimation { target: sb; property: "scale"; to: 1.14; duration: Theme.durFast; easing.type: Theme.easeOut }
+                NumberAnimation { target: flash; property: "opacity"; to: 0.16; duration: Theme.durFast; easing.type: Theme.easeOut }
             }
             ParallelAnimation {
-                NumberAnimation { target: sb; property: "scale"; to: 1; duration: 380; easing.type: Easing.OutBack }
-                NumberAnimation { target: flash; property: "opacity"; to: 0; duration: 380; easing.type: Easing.OutCubic }
+                NumberAnimation { target: sb; property: "scale"; to: 1; duration: 380; easing.type: Theme.easePop }   // the settle after the swell, timed with the ring's turn
+                NumberAnimation { target: flash; property: "opacity"; to: 0; duration: 380; easing.type: Theme.easeOut }
             }
         }
         MouseArea { id: sbMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: sb.clicked() }
@@ -400,7 +400,7 @@ Item {
                     readonly property bool expanded: volHov.hovered || hsl.pressed
                     implicitHeight: 40
                     implicitWidth: 40 + (expanded ? 80 : 0)
-                    Behavior on implicitWidth { NumberAnimation { duration: 150; easing.type: Theme.easeOut } }
+                    Behavior on implicitWidth { NumberAnimation { duration: Theme.durBase; easing.type: Theme.easeOut } }
                     clip: true
                     HoverHandler { id: volHov }
                     Row {

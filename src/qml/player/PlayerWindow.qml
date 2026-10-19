@@ -685,7 +685,7 @@ Window {
         anchors.horizontalCenter: parent.horizontalCenter
         y: win.subTop ? Math.max(videoOut.y, 0) + 64
                       : Math.min(videoOut.y + videoOut.height, win.height) - height - (win.controlsShown ? 128 : 48)
-        Behavior on y { NumberAnimation { duration: 200; easing.type: Theme.easeOut } }
+        Behavior on y { NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut } }
         Rectangle {
             visible: win.subBgOpacity > 0
             anchors.centerIn: subText

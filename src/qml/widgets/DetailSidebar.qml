@@ -234,8 +234,8 @@ Rectangle {
                 }
                 ParallelAnimation {
                     id: sideIn
-                    NumberAnimation { target: sidePanes; property: "opacity"; to: 1; duration: Theme.durBase; easing.type: Easing.OutQuart }
-                    NumberAnimation { target: sideShift; property: "x"; to: 0; duration: Theme.durSlow; easing.type: Easing.OutQuart }
+                    NumberAnimation { target: sidePanes; property: "opacity"; to: 1; duration: Theme.durBase; easing.type: Theme.easeOut }
+                    NumberAnimation { target: sideShift; property: "x"; to: 0; duration: Theme.durSlow; easing.type: Theme.easeOut }
                 }
 
                 DetailGeneral { win: sidebar.win; vertical: true }

@@ -134,6 +134,7 @@ Item {
                             // the step under way breathes, so the wait reads as alive
                             SequentialAnimation on opacity {
                                 running: step.now && root.visible && !root.noSource
+                                // a breathing pulse in a loop: its own slow rhythm, not a transition
                                 loops: Animation.Infinite
                                 onRunningChanged: if (!running) stepDot.opacity = 1
                                 NumberAnimation { to: 0.3; duration: 700; easing.type: Easing.InOutSine }
@@ -249,6 +250,7 @@ Item {
                     }
                     NumberAnimation on x {
                         running: sweep.parent.visible && !Theme.reduceMotion
+                        // the sweep crossing the bar, over and over: slow enough to read as waiting
                         loops: Animation.Infinite
                         from: -sweep.width; to: track.width
                         duration: 1400; easing.type: Easing.InOutQuad
@@ -256,6 +258,7 @@ Item {
                     // reduced motion: it fades in place instead
                     SequentialAnimation on opacity {
                         running: sweep.parent.visible && Theme.reduceMotion
+                        // with reduced motion, a gentle fade in place of the sweep
                         loops: Animation.Infinite
                         NumberAnimation { to: 0.2; duration: 800 }
                         NumberAnimation { to: 1; duration: 800 }

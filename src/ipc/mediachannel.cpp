@@ -97,6 +97,7 @@ bool MediaChannel::listen(const QString &name, const QString &peerSid)
     LocalFree(sd);
     if (m_pipe == INVALID_HANDLE_VALUE) { m_pipe = nullptr; return false; }
 
+    // cppcheck-suppress uninitvar ; value-initialised by the braces
     auto *ov = new OVERLAPPED{};
     ov->hEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
     m_overlapped = ov;

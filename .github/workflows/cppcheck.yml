@@ -37,6 +37,7 @@ jobs:
           # struct is a known false positive in the IPC serializers.
           cppcheck --quiet --std=c++17 --library=qt \
             --inline-suppr --suppress=missingInclude --suppress=missingIncludeSystem \
+            -DQT_WARNING_PUSH= -DQT_WARNING_POP= \
             --suppress=uninitStructMember:src/ipc/ipcserialize.h \
             --error-exitcode=1 -I src \
             src/app src/torrent src/bridges src/services src/webui src/ipc

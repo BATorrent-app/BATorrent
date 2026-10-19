@@ -64,7 +64,7 @@ Rectangle {
     }
     SequentialAnimation {
         id: chipFade
-        NumberAnimation { target: dlChip; property: "contentOpacity"; to: 0; duration: Theme.durBase; easing.type: Easing.InCubic }
+        NumberAnimation { target: dlChip; property: "contentOpacity"; to: 0; duration: Theme.durBase; easing.type: Theme.easeIn }
         ScriptAction { script: car.dlShown = car.dlIndex }
         NumberAnimation { target: dlChip; property: "contentOpacity"; to: 1; duration: Theme.durSlower; easing.type: Theme.easeOut }
     }
@@ -227,6 +227,7 @@ Rectangle {
                         color: Theme.accent
                         SequentialAnimation on opacity {
                             running: Theme.tabCursor && navTab.active && !Theme.reduceMotion
+                            // a text cursor's blink (530 ms on, 530 off), not a transition
                             loops: Animation.Infinite
                             NumberAnimation { to: 0; duration: 1; }
                             PauseAnimation { duration: 530 }

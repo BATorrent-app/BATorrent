@@ -77,8 +77,8 @@ Item {
     }
     ParallelAnimation {
         id: stepAnim
-        NumberAnimation { target: wiz; property: "stepIn"; from: 0; to: 1; duration: 380; easing.type: Easing.OutCubic }
-        NumberAnimation { target: wiz; property: "stepRise"; from: 0; to: 1; duration: Theme.reduceMotion ? 0 : 480; easing.type: Easing.OutCubic }
+        NumberAnimation { target: wiz; property: "stepIn"; from: 0; to: 1; duration: 380; easing.type: Theme.easeOut }   // a whole step coming in: slower than a control, faster than durShow
+        NumberAnimation { target: wiz; property: "stepRise"; from: 0; to: 1; duration: Theme.reduceMotion ? 0 : 480; easing.type: Theme.easeOut }
     }
 
     // ---- what is set (mirrors, so the chips restate a choice at once) ----
@@ -148,7 +148,7 @@ Item {
         width: parent.width; height: parent.height - wiz.topInset
         color: Theme.bg
         opacity: wiz.anim
-        Behavior on color { ColorAnimation { duration: 500 } }
+        Behavior on color { ColorAnimation { duration: 500 } }   // the whole screen changing theme: a slow cross-fade, on purpose
         // swallow everything meant for the app underneath
         MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons; onWheel: function (w) { w.accepted = true } }
 
@@ -696,8 +696,8 @@ Item {
                             height: 5
                             radius: 3
                             color: index <= wiz.step ? Theme.accent : Qt.rgba(Theme.t1.r, Theme.t1.g, Theme.t1.b, 0.18)
-                            Behavior on width { NumberAnimation { duration: 400; easing.type: Easing.OutCubic } }
-                            Behavior on color { ColorAnimation { duration: 300 } }
+                            Behavior on width { NumberAnimation { duration: Theme.durSlower; easing.type: Theme.easeOut } }
+                            Behavior on color { ColorAnimation { duration: Theme.durSlower } }
                             MouseArea { anchors.fill: parent; anchors.margins: -6; cursorShape: Qt.PointingHandCursor; onClicked: wiz.go(index) }
                         }
                     }
@@ -756,7 +756,7 @@ Item {
                        : (btnMa.containsMouse ? Theme.hover : "transparent")
         border.width: primary || flat ? 0 : 1
         border.color: Theme.hair
-        Behavior on color { ColorAnimation { duration: 300 } }
+        Behavior on color { ColorAnimation { duration: Theme.durSlower } }
         Rectangle {
             visible: btn.primary && Theme.glow
             anchors.fill: parent; anchors.margins: -6

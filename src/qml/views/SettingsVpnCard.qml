@@ -113,7 +113,7 @@ ColumnLayout {
                         visible: page.st === 1
                         SequentialAnimation on opacity {
                             running: page.st === 1; loops: Animation.Infinite
-                            NumberAnimation { from: 0.8; to: 0.0; duration: 900; easing.type: Theme.easeIn }
+                            NumberAnimation { from: 0.8; to: 0.0; duration: 900; easing.type: Theme.easeIn }   // a pulse that loops while connecting, not a transition
                         }
                     }
                 }

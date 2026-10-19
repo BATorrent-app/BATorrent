@@ -131,7 +131,7 @@ Item {
                     anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom
                     width: parent.width * (root.countdownSec > 0 ? 1 - (root.countdownSec - 1) / 8 : 1)
                     color: pnMa.containsMouse ? Qt.lighter(Theme.accent, 1.1) : Theme.accent
-                    Behavior on width { NumberAnimation { duration: 950; easing.type: Easing.Linear } }
+                    Behavior on width { NumberAnimation { duration: 950; easing.type: Easing.Linear } }   // the countdown: one even step per second, so linear and just under 1 s
                 }
                 Text {
                     id: playNowTxt; anchors.centerIn: parent

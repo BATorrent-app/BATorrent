@@ -220,8 +220,10 @@ SessionManager::SessionManager(QObject *parent)
     for (const auto &h : settings.value("forceStartHashes").toStringList())
         m_forceStartHashes.insert(h);
     m_blockLeechers = settings.value("blockLeechers", false).toBool();
-    // Apply persisted advanced settings on startup
-    setAdvancedSettings(advancedSettings());
+    // Apply persisted advanced settings on startup. Named outright: a virtual
+    // call from the constructor would not dispatch anyway, and saying so keeps
+    // clang-tidy's analyzer from flagging it.
+    SessionManager::setAdvancedSettings(SessionManager::advancedSettings());
 
     // Torrent export + run on complete + watched folder + temp path
     m_torrentExportDir = settings.value("torrentExportDir").toString();

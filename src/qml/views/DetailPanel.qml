@@ -229,8 +229,8 @@ Rectangle {
                 }
                 ParallelAnimation {
                     id: paneIn
-                    NumberAnimation { target: panes; property: "opacity"; to: 1; duration: Theme.durBase; easing.type: Easing.OutQuart }
-                    NumberAnimation { target: paneShift; property: "x"; to: 0; duration: Theme.durSlow; easing.type: Easing.OutQuart }
+                    NumberAnimation { target: panes; property: "opacity"; to: 1; duration: Theme.durBase; easing.type: Theme.easeOut }
+                    NumberAnimation { target: paneShift; property: "x"; to: 0; duration: Theme.durSlow; easing.type: Theme.easeOut }
                 }
 
                 DetailGeneral { win: detailPanel.win; vertical: false }
