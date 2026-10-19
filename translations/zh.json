@@ -2092,5 +2092,11 @@
   "game_uninstall_body_nosize": "运行游戏自带的卸载程序。你的存档会保留在原处。",
   "game_uninstall_btn": "卸载",
   "vpn_retry_in": "%1 秒后重试。",
-  "vpn_port_open": "端口 %1 已对节点开放"
+  "vpn_port_open": "端口 %1 已对节点开放",
+  "vpn_legacy_title": "旧的 VPN 隧道仍然安装着",
+  "vpn_legacy_body": "BATorrent 测试版在这台电脑上留下了一个 WireGuard 隧道。它随 Windows 启动，可能会让整台电脑的流量经过一个应用已不再管理的 VPN。删除它需要一次管理员权限。",
+  "vpn_legacy_action": "删除",
+  "vpn_legacy_done": "旧的 VPN 隧道已删除",
+  "vpn_legacy_failed": "旧的 VPN 隧道仍然存在",
+  "vpn_legacy_failed_body": "没有管理员权限无法删除。应用下次启动时会再次询问。"
 }

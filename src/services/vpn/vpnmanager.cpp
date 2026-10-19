@@ -7,6 +7,7 @@
 #include <QPointer>
 #include "services/integrations/geoip.h"
 #include "services/vpn/vpnmanager.h"
+#include "services/vpn/legacytunnels.h"
 
 #include <QDir>
 #include <QFile>
@@ -230,6 +231,17 @@ void VpnManager::resolveCountry(const QString &id)
         const QString cached = self->m_geoIp->cachedCountry(ip);
         if (!cached.isEmpty()) { self->m_profiles[j].cc = cached; emit self->profilesChanged(); return; }
         self->m_geoIp->resolve(ip);
+    });
+}
+
+QStringList VpnManager::legacyTunnels() const { return LegacyTunnels::find(); }
+
+void VpnManager::removeLegacyTunnels()
+{
+    const QStringList names = LegacyTunnels::find();
+    LegacyTunnels::remove(names, this, [this](bool ok) {
+        qInfo() << "[vpn] old tunnel services removed:" << ok;
+        emit legacyTunnelsRemoved(ok);
     });
 }
 

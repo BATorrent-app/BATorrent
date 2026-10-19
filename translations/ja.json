@@ -2092,5 +2092,11 @@
   "game_uninstall_body_nosize": "ゲーム付属のアンインストーラーを実行します。セーブデータはそのまま残ります。",
   "game_uninstall_btn": "アンインストール",
   "vpn_retry_in": "%1 秒後に再試行します。",
-  "vpn_port_open": "ポート %1 をピアに開放中"
+  "vpn_port_open": "ポート %1 をピアに開放中",
+  "vpn_legacy_title": "古い VPN トンネルがまだインストールされています",
+  "vpn_legacy_body": "BATorrent のベータ版がこのコンピューターに WireGuard トンネルを残しました。Windows と一緒に起動し、アプリが管理していない VPN にコンピューターのすべての通信を流す可能性があります。削除には一度だけ管理者権限が必要です。",
+  "vpn_legacy_action": "削除",
+  "vpn_legacy_done": "古い VPN トンネルを削除しました",
+  "vpn_legacy_failed": "古い VPN トンネルはまだ残っています",
+  "vpn_legacy_failed_body": "管理者権限がないと削除できません。次回の起動時にもう一度確認します。"
 }

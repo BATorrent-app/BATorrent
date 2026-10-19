@@ -2092,5 +2092,11 @@
   "game_uninstall_body_nosize": "Oyunun kendi kaldırıcısını çalıştırır. Kayıtların yerinde kalır.",
   "game_uninstall_btn": "Kaldır",
   "vpn_retry_in": "%1 sn sonra yeniden denenecek.",
-  "vpn_port_open": "%1 numaralı port eşlere açık"
+  "vpn_port_open": "%1 numaralı port eşlere açık",
+  "vpn_legacy_title": "Eski bir VPN tüneli hâlâ kurulu",
+  "vpn_legacy_body": "Bir BATorrent betası bu bilgisayarda bir WireGuard tüneli bıraktı. Windows ile başlar ve bilgisayarın tüm trafiğini uygulamanın artık yönetmediği bir VPN'den geçirebilir. Kaldırmak için bir kez yönetici izni istenir.",
+  "vpn_legacy_action": "Kaldır",
+  "vpn_legacy_done": "Eski VPN tüneli kaldırıldı",
+  "vpn_legacy_failed": "Eski VPN tüneli hâlâ duruyor",
+  "vpn_legacy_failed_body": "Yönetici izni olmadan kaldırılamaz. Uygulama bir sonraki açılışta tekrar sorar."
 }

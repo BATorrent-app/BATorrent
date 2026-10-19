@@ -332,3 +332,30 @@ TEST_CASE("VpnManager: no automatic try after Disconnect, a broken config, or a 
     tunnel->drop();
     CHECK(mgr.retryIn() == 0);
 }
+
+#include "services/vpn/legacytunnels.h"
+
+// What the 4.8 betas installed, and what a person's own WireGuard setup looks
+// like: only the first may ever be offered for removal.
+TEST_CASE("LegacyTunnels: only a tunnel service BATorrent installed is ours", "[vpn]")
+{
+    // the beta's wireguard.exe, a profile in BATorrent's own folder
+    CHECK(LegacyTunnels::isOurs(
+        "WireGuardTunnel$3f2a9c1b7d4e4f0a9b8c7d6e5f4a3b2c",
+        R"("C:\Users\Ana\AppData\Local\Programs\BATorrent\wireguard\wireguard.exe" /tunnelservice )"
+        R"("C:\Users\Ana\AppData\Roaming\BATorrent\BATorrent\vpn\3f2a9c1b7d4e4f0a9b8c7d6e5f4a3b2c.conf")"));
+    CHECK(LegacyTunnels::isOurs("WireGuardTunnel$3f2a9c1b7d4e-split",
+        R"("C:\Program Files\WireGuard\wireguard.exe" /tunnelservice )"
+        R"("C:\Users\Ana\AppData\Roaming\BATorrent\BATorrent\vpn\3f2a9c1b7d4e-split.conf")"));
+    // the person's own tunnels, made with the WireGuard app
+    CHECK_FALSE(LegacyTunnels::isOurs("WireGuardTunnel$home",
+        R"("C:\Program Files\WireGuard\wireguard.exe" /tunnelservice )"
+        R"("C:\Program Files\WireGuard\Data\Configurations\home.conf.dpapi")"));
+    CHECK_FALSE(LegacyTunnels::isOurs("WireGuardTunnel$mullvad-br",
+        R"("C:\Program Files\WireGuard\wireguard.exe" /tunnelservice "D:\vpn\mullvad-br.conf")"));
+    // not a WireGuard tunnel service at all
+    CHECK_FALSE(LegacyTunnels::isOurs("BATorrentUpdater",
+        R"("C:\Users\Ana\AppData\Local\Programs\BATorrent\wireguard\wireguard.exe")"));
+    CHECK_FALSE(LegacyTunnels::isOurs("WireGuardManager",
+        R"("C:\Program Files\WireGuard\wireguard.exe" /managerservice)"));
+}

@@ -71,6 +71,10 @@ public:
     QString lastError() const { return m_error; }
     bool tunnelIsReal() const;
     int forwardedPort() const { return m_fwdPort; }
+    // Tunnel services an old build's in-app VPN left installed (Windows), and
+    // their removal with one administrator prompt: answers legacyTunnelsRemoved.
+    Q_INVOKABLE QStringList legacyTunnels() const;
+    Q_INVOKABLE void removeLegacyTunnels();
     int retryIn() const;
     // The tunnel is a local SOCKS5 proxy (batwg) rather than an interface;
     // socks() is {port, user, pass, ip} while connected.
@@ -81,6 +85,7 @@ signals:
     void stateChanged();
     void profilesChanged();
     void forwardedPortChanged();
+    void legacyTunnelsRemoved(bool ok);
     void retryChanged();
     void interfaceUp(const QString &iface);    // connected → bind torrent traffic here
     // deliberate = the user disconnected; false = the tunnel failed/dropped.

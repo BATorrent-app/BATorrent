@@ -122,6 +122,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/vpn/wgtunnel.h
     ${CMAKE_SOURCE_DIR}/src/services/vpn/vpnmanager.h
     ${CMAKE_SOURCE_DIR}/src/services/vpn/vpnmanager.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/vpn/legacytunnels.cpp
     # C++<->QML bridge layer (split per domain) + its backend deps (for test_bridge)
     ${CMAKE_SOURCE_DIR}/src/bridges/qmlpostermodel.cpp
     ${CMAKE_SOURCE_DIR}/src/bridges/librarygroups.cpp

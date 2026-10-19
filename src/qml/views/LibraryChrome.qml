@@ -23,7 +23,24 @@ ColumnLayout {
     signal findTitleRequested(var item)
 
     // nothing in the list: no filters, no inspector, nothing to act on
-    readonly property bool empty: typeof session !== "undefined" && session.torrentCount === 0
+    // (a stand-in list, such as the setup wizard's sample library, counts)
+    readonly property bool empty: libraryView.modelOverride !== null
+                                  ? libraryView.modelOverride.count === 0
+                                  : typeof session !== "undefined" && session.torrentCount === 0
+    // the filter pills count the stand-in list, not the real, empty library
+    readonly property var overrideCounts: {
+        var m = libraryView.modelOverride
+        if (m === null) return null
+        var c = { all: m.count, downloading: 0, completed: 0, paused: 0, problems: 0, active: 0, seeding: 0, queued: 0 }
+        for (var i = 0; i < m.count; ++i) {
+            var k = m.get(i).stateKey
+            if (k === "downloading") { c.downloading++; c.active++ }
+            else if (k === "seeding") { c.seeding++; c.completed++; c.active++ }
+            else if (k === "completed") c.completed++
+            else if (k === "paused") c.paused++
+        }
+        return c
+    }
 
     property alias filterBar: filterBar
     property alias libraryView: libraryView
@@ -31,6 +48,7 @@ ColumnLayout {
     FilterBar {
         id: filterBar
         visible: !root.empty
+        countOverride: root.overrideCounts
         win: root.host
         controller: root.controller
     }

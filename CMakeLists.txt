@@ -177,6 +177,8 @@ add_executable(BATorrent WIN32 MACOSX_BUNDLE
     src/services/vpn/wgtunnel_userspace.cpp
     src/services/vpn/vpnmanager.h
     src/services/vpn/vpnmanager.cpp
+    src/services/vpn/legacytunnels.h
+    src/services/vpn/legacytunnels.cpp
     src/services/discovery/discoveryservice.cpp
     src/services/discovery/discoveryservice_title.cpp
     src/services/discovery/discoveryservice_game.cpp

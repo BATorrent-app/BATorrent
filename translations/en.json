@@ -2092,5 +2092,11 @@
   "game_uninstall_body_nosize": "Runs the game's own uninstaller. Your saves stay where they are.",
   "game_uninstall_btn": "Uninstall",
   "vpn_retry_in": "Trying again in %1 s.",
-  "vpn_port_open": "port %1 open to peers"
+  "vpn_port_open": "port %1 open to peers",
+  "vpn_legacy_title": "An old VPN tunnel is still installed",
+  "vpn_legacy_body": "A BATorrent beta left a WireGuard tunnel on this computer. It starts with Windows and can send all of the computer's traffic through a VPN the app no longer manages. Removing it asks for administrator rights once.",
+  "vpn_legacy_action": "Remove it",
+  "vpn_legacy_done": "The old VPN tunnel was removed",
+  "vpn_legacy_failed": "The old VPN tunnel is still there",
+  "vpn_legacy_failed_body": "Without administrator rights it cannot be removed. The app asks again next time it starts."
 }

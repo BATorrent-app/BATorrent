@@ -13,6 +13,7 @@
 #include <QVariantMap>
 #include <QSettings>
 #include <QDateTime>
+#include <QTimer>
 
 QVariantList QmlSessionBridge::makeRoomList() const
 {
@@ -118,12 +119,29 @@ QVariantList QmlSessionBridge::seedingTransfers() const
 
 // Continue watching / playing for the nav-rail slot when you're on the Downloads
 // tab (the downloads are already on screen there, so show what's resumable instead).
+//
+// Building it asks the engine for the movie and game libraries over a
+// synchronous call that runs the event loop. Done inside the getter, a stats
+// tick arriving meanwhile re-evaluated the bindings reading it while they were
+// being evaluated (QML: binding loop on the carousel's resumeList and
+// dlItem). So the getter only hands back the last list and, when it is over
+// 8 s old, queues a rebuild that runs outside any binding.
 QVariantList QmlSessionBridge::resumeItems() const
 {
-    static QVariantList cached; static qint64 last = 0;
     const qint64 now = QDateTime::currentSecsSinceEpoch();
-    if (last != 0 && now - last < 8) return cached;
-    last = now;
+    if (!m_resumeQueued && (m_resumeBuiltAt == 0 || now - m_resumeBuiltAt >= 8)) {
+        m_resumeQueued = true;
+        QTimer::singleShot(0, const_cast<QmlSessionBridge *>(this), [this]() {
+            const_cast<QmlSessionBridge *>(this)->rebuildResumeItems();
+        });
+    }
+    return m_resumeItems;
+}
+
+void QmlSessionBridge::rebuildResumeItems()
+{
+    m_resumeQueued = false;
+    m_resumeBuiltAt = QDateTime::currentSecsSinceEpoch();
 
     auto fmtPlay = [](qint64 s) {
         const qint64 h = s / 3600, m = (s % 3600) / 60;
@@ -168,7 +186,8 @@ QVariantList QmlSessionBridge::resumeItems() const
     std::sort(rows.begin(), rows.end(), [](const auto &a, const auto &b){ return a.first > b.first; });
     QVariantList out;
     for (int i = 0; i < rows.size() && i < 8; ++i) out << rows[i].second;
-    cached = out;
-    return out;
+    if (out == m_resumeItems) return;
+    m_resumeItems = out;
+    emit statsChanged();   // the property's notifier: the carousel reads it again
 }
 

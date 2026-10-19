@@ -646,6 +646,11 @@ private:
     QString achievementDir(const QString &infoHash) const;
     QString saveFolderOf(const QString &infoHash) const;
     QHash<QString, QVariantMap> m_uninstallCache;   // infoHash → gameUninstaller(), walked once
+    // resumeItems(): the last list, rebuilt outside any binding (see the getter)
+    void rebuildResumeItems();
+    mutable QVariantList m_resumeItems;
+    mutable qint64 m_resumeBuiltAt = 0;
+    mutable bool m_resumeQueued = false;
     void onAchievementsLookedUp(const QString &key, int appId, const QVariantList &list);
     void startAchievementWatch(const QString &infoHash);
     void stopAchievementWatch(const QString &infoHash);

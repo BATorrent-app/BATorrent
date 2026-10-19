@@ -2092,5 +2092,11 @@
   "game_uninstall_body_nosize": "Startet die eigene Deinstallation des Spiels. Deine Spielstände bleiben, wo sie sind.",
   "game_uninstall_btn": "Deinstallieren",
   "vpn_retry_in": "Neuer Versuch in %1 s.",
-  "vpn_port_open": "Port %1 für Peers offen"
+  "vpn_port_open": "Port %1 für Peers offen",
+  "vpn_legacy_title": "Ein alter VPN-Tunnel ist noch installiert",
+  "vpn_legacy_body": "Eine BATorrent-Beta hat einen WireGuard-Tunnel auf diesem Computer hinterlassen. Er startet mit Windows und kann den gesamten Datenverkehr über ein VPN leiten, das die App nicht mehr verwaltet. Zum Entfernen werden einmal Administratorrechte abgefragt.",
+  "vpn_legacy_action": "Entfernen",
+  "vpn_legacy_done": "Der alte VPN-Tunnel wurde entfernt",
+  "vpn_legacy_failed": "Der alte VPN-Tunnel ist noch da",
+  "vpn_legacy_failed_body": "Ohne Administratorrechte lässt er sich nicht entfernen. Die App fragt beim nächsten Start erneut."
 }

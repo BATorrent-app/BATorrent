@@ -2092,5 +2092,11 @@
   "game_uninstall_body_nosize": "Ejecuta el desinstalador del propio juego. Tus partidas se quedan donde están.",
   "game_uninstall_btn": "Desinstalar",
   "vpn_retry_in": "Reintentando en %1 s.",
-  "vpn_port_open": "puerto %1 abierto a los peers"
+  "vpn_port_open": "puerto %1 abierto a los peers",
+  "vpn_legacy_title": "Sigue instalado un túnel antiguo de la VPN",
+  "vpn_legacy_body": "Una beta de BATorrent dejó un túnel WireGuard en este equipo. Se inicia con Windows y puede enviar todo el tráfico del equipo por una VPN que la app ya no controla. Quitarlo pide permisos de administrador una vez.",
+  "vpn_legacy_action": "Quitarlo",
+  "vpn_legacy_done": "Se quitó el túnel antiguo de la VPN",
+  "vpn_legacy_failed": "El túnel antiguo de la VPN sigue ahí",
+  "vpn_legacy_failed_body": "Sin permisos de administrador no se puede quitar. La app volverá a preguntar la próxima vez que se abra."
 }

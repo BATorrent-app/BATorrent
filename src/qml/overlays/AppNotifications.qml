@@ -209,6 +209,7 @@ Item {
         case "update": host.updateDlg.open(); break
         case "logs": host.showWin(host.logWinLoader); break
         case "crashreport": if (typeof logs !== "undefined") Qt.openUrlExternally(logs.crashReportUrl()); break
+        case "oldtunnel": if (typeof vpn !== "undefined" && vpn) vpn.removeLegacyTunnels(); break
         case "star": Qt.openUrlExternally("https://github.com/BATorrent-app/BATorrent"); break
         case "open": if (s && s.selectByInfoHash(a.hash)) s.openSaveFolder(); break
         case "move": if (s && s.selectByInfoHash(a.hash)) { s.moveSelectedStorage(a.path); s.resumeSelected() } break
@@ -229,6 +230,8 @@ Item {
         running: true
         repeat: false
         onTriggered: {
+            // not over the setup wizard, What's new or the tour: ask again later
+            if (host.libraryObscured) { interval = 2000; restart(); return }
             if (typeof settings === "undefined") return
             if (settings.getBool("starAskShown")) return
             var first = Number(settings.get("firstLaunchAt") || 0)
@@ -251,9 +254,35 @@ Item {
         running: true
         repeat: false
         onTriggered: {
+            // it sat on the wizard's Continue button: wait for the screens a
+            // first start or an update opens to close
+            if (host.libraryObscured) { interval = 2000; restart(); return }
             if (typeof logs !== "undefined" && logs.previousSessionCrashed())
                 toastHost.show(i18n.t("crash_toast_title"), i18n.t("crash_toast_body"), 1,
                                "crashreport", i18n.t("crash_toast_action"))
+        }
+    }
+
+    // A 4.8 beta's in-app VPN left a WireGuard service installed: it starts
+    // with Windows and can route the whole machine through a tunnel nothing
+    // manages. Once the start-up screens are gone, offer to remove it.
+    Timer {
+        interval: 6000
+        running: Qt.platform.os === "windows"
+        repeat: false
+        onTriggered: {
+            if (host.libraryObscured) { interval = 2000; restart(); return }
+            if (typeof vpn === "undefined" || !vpn || vpn.legacyTunnels().length === 0) return
+            toastHost.show(i18n.t("vpn_legacy_title"), i18n.t("vpn_legacy_body"), 1,
+                           "oldtunnel", i18n.t("vpn_legacy_action"))
+        }
+    }
+    Connections {
+        target: typeof vpn !== "undefined" ? vpn : null
+        ignoreUnknownSignals: true
+        function onLegacyTunnelsRemoved(ok) {
+            if (ok) toastHost.show(i18n.t("vpn_legacy_done"), "", 3)
+            else toastHost.show(i18n.t("vpn_legacy_failed"), i18n.t("vpn_legacy_failed_body"), 2)
         }
     }
 
