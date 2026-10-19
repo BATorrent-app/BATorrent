@@ -36,6 +36,32 @@ ModalShell {
     readonly property string feedbackUrl: "https://docs.google.com/forms/d/e/1FAIpQLScdwLxWC-LB4wLuMI6_D3-QNPLNJPpzbob5LU0Y2yMnhaBFrg/viewform"
 
     readonly property var releaseContent: ({
+        "5.0": {
+            date: "2026-10-19",
+            lead: { title: "A new BATorrent",
+                    body: "Every screen was redone, with seven themes to pick from. Downloads, the player, Find and the HUB all look and work better.",
+                    action: "downloads" },
+            items: [
+                { title: "A VPN inside the app", body: "Import a WireGuard file and only BATorrent goes through it. Nothing is installed on your computer, and it reconnects on its own." },
+                { title: "Series, the way you watch them", body: "A show has its own page, episodes fold into one row, and the next one plays in the same window." },
+                { title: "A better player", body: "Picture in picture, languages, skip intro, and the wait before a stream happens inside it." },
+                { title: "Games have a page", body: "Saves with a backup, the repack's extras, launch options and newer builds." },
+                { title: "Seven themes", body: "Each with its own type and art, picked from pictures of the app." }
+            ],
+            fixes: [
+                "Deleted data could start downloading again on its own",
+                "Ratio and availability on the cards were not always right"
+            ],
+            note: "This is the biggest one yet. Almost every screen was redrawn, and a lot changed underneath.<br><br>The VPN is new from the ground up: import a WireGuard file and only BATorrent goes through it. It needs no administrator rights and installs nothing, so it can never take your computer's connection down with it. If it drops, it comes back on its own.<br><br>Series, the player and games all got a lot of attention too.<br><br><b>Found a bug or have an idea? <a href=\"https://docs.google.com/forms/d/e/1FAIpQLScdwLxWC-LB4wLuMI6_D3-QNPLNJPpzbob5LU0Y2yMnhaBFrg/viewform\">Tell me here</a></b>, I read everything.<br>Mateus"
+            , highlights: [
+                "Every screen redone, with seven themes",
+                "A VPN inside the app: only BATorrent goes through it",
+                "Series have their own page, and episodes fold into one row",
+                "Picture in picture and skip intro in the player",
+                "Games have a page: saves, extras, launch options",
+                "Fixed: deleted data downloading again on its own"
+            ]
+        },
         "4.9": {
             date: "2026-10-09",
             lead: { title: "One Add button for everything",

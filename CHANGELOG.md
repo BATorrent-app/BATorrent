@@ -1,5 +1,51 @@
 # Changelog
 
+## v5.0.0-beta1 (2026-10-19)
+
+A test build of 5.0. It is a pre-release: the app only offers it to people on
+the beta update track (Settings, Updates). Expect rough edges, and please report
+what you hit.
+
+### New
+- **A new look.** The main screen, the player, Find, the HUB, Add, the setup
+  wizard, notifications, Remove, Free up space, the RSS window and the smaller
+  dialogs were all redone. Seven themes, each with its own type and art, picked
+  from pictures of the app in a new Appearance page. A title strip with
+  back/forward over the navigation.
+- **VPN inside the app, rebuilt.** Import a WireGuard `.conf` and connect: only
+  BATorrent goes through the VPN, and the rest of the computer keeps its normal
+  connection. No administrator prompt, no network adapter, nothing installed on
+  the system. If the VPN drops, it reconnects on its own; with the kill switch
+  on, torrents stop until it is back. On servers that offer it (Proton's P2P
+  servers), it opens a port so peers can reach you.
+- **Series and streaming.** A show has its own page, with the episodes you have
+  and the ones you don't; episodes of one series fold into one row; season packs
+  are understood; the wait before a stream happens inside the player, with what
+  it is waiting for; the next episode plays in the same window.
+- **Player.** Picture in picture on the control bar, audio and subtitle
+  languages, intro skipping, the keyboard keys a player should have, and video
+  decoded in a separate, sandboxed process.
+- **Games.** A game has a page: its saves (with a dated backup), the languages
+  and extras of the repack, a newer build when the catalogs have one, launch
+  options, verify and uninstall. Achievements with BATorrent's own unlock card
+  and sound. One-click installs for FitGirl, DODI, OnlineFix and GOG installers.
+- **Find.** A title has a page with its releases, sorted by who made them, and a
+  recommended pick. Offline and catalog-down states say so.
+
+### Fixed
+- Deleted data no longer downloads again on its own.
+- Honest ratio and availability on the cards.
+- The app and the engine no longer overwrite each other's lines in the log.
+- Many smaller things from two design reviews and a code review.
+
+### Please test
+- The VPN, if you have a WireGuard `.conf` (Proton, Mullvad, IVPN...): connect,
+  check that torrents keep going, disconnect. Tell me if Windows Firewall asks
+  about `batwg.exe`.
+- macOS and Linux builds: they compile, but nobody has run them yet.
+
+---
+
 ## v4.9.0 (2026-10-09)
 
 ### Added
