@@ -103,6 +103,9 @@ ColumnLayout {
     PosterShelf {
         Layout.fillWidth: true
         Layout.topMargin: 18
+        // the shelf keeps the HUB's inset; here it lines up with "Releases"
+        Layout.leftMargin: 8 - Theme.sp5
+        Layout.rightMargin: 8 - Theme.sp5
         visible: !panel.isGame && items.length > 0
         landscape: true
         showSeeAll: false
