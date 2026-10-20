@@ -6,7 +6,7 @@
   "about_link_privacy": "プライバシー",
   "about_link_releases": "リリース",
   "about_no_telemetry": "テレメトリも分析もありません。アプリが自動で行う通信は、GitHub での更新確認（設定で無効化できます）と、クラッシュ時のクラッシュレポート送信だけです。",
-  "about_no_telemetry_body": "テレメトリも分析もありません。自動で行う通信は、更新確認（任意）とクラッシュ時のレポート送信だけです。",
+  "about_no_telemetry_body": "テレメトリも分析もありません。トレント以外に自動で行う通信は三つだけです。タイトルのカバーと情報の取得（TMDB、IGDB、Steam）、オフにできる更新確認、そしてクラッシュ時のレポート送信です。",
   "about_star": "GitHubでスター",
   "about_title": "BATorrent について",
   "about_translations": "翻訳",

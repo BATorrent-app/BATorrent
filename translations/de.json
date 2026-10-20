@@ -6,7 +6,7 @@
   "about_link_privacy": "Datenschutz",
   "about_link_releases": "Releases",
   "about_no_telemetry": "Keine Telemetrie, keine Analyse. Von sich aus prüft die App nur auf GitHub nach Updates (in den Einstellungen abschaltbar) und sendet bei einem Absturz einen Absturzbericht.",
-  "about_no_telemetry_body": "Keine Telemetrie, keine Analyse. Die App geht nur von sich aus online, um nach Updates zu suchen (optional) und um nach einem Absturz einen Absturzbericht zu senden.",
+  "about_no_telemetry_body": "Keine Telemetrie, keine Analyse. Neben deinen Torrents geht die App von sich aus nur für drei Dinge online: Cover und Details deiner Titel (TMDB, IGDB, Steam), die Suche nach Updates, die du abschalten kannst, und einen Absturzbericht nach einem Absturz.",
   "about_star": "Stern auf GitHub",
   "about_title": "Über BATorrent",
   "about_translations": "Übersetzungen",

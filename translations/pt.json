@@ -6,7 +6,7 @@
   "about_link_privacy": "Privacidade",
   "about_link_releases": "Versões",
   "about_no_telemetry": "Sem telemetria, sem analytics. Sozinho, o app só verifica atualizações no GitHub (dá para desativar nas Configurações) e, se travar, envia um relatório de crash.",
-  "about_no_telemetry_body": "Sem telemetria, sem analytics. O app só se conecta por conta própria para verificar atualizações, o que é opcional, e para enviar um relatório de crash se travar.",
+  "about_no_telemetry_body": "Sem telemetria, sem analytics. Além dos seus torrents, o app se conecta sozinho para três coisas: capas e detalhes dos seus títulos (TMDB, IGDB, Steam), a verificação de atualização, que dá para desligar, e um relatório de crash se fechar por um erro.",
   "about_star": "Dar estrela no GitHub",
   "about_title": "Sobre o BATorrent",
   "about_translations": "Traduções",
