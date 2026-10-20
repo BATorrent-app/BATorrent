@@ -10,9 +10,10 @@
 // The note and the release text are SINGLE-LANGUAGE literals in
 // releaseContent: auto-translating a personal message reads as fake. Key by
 // "major.minor" so hotfix bumps keep the release's message; an exact-version
-// key still wins. A release can carry date, lead {title, body, action},
-// items [{title, body, showMe}] and fixes []; older ones only have
-// highlights, which show as plain items.
+// key still wins. A release can carry date, lead {title, body, action, image},
+// items [{title, body, showMe, image}] and fixes []; older ones only have
+// highlights, which show as plain items. An image is a picture of the app
+// bundled under qrc:/images/whatsnew/ (16:10 for an item).
 import QtQuick
 import QtQuick.Layouts
 import "../theme"
@@ -37,26 +38,37 @@ ModalShell {
 
     readonly property var releaseContent: ({
         "5.0": {
-            date: "2026-10-19",
+            date: "2026-10-20",
             lead: { title: "A new BATorrent",
-                    body: "Every screen was redone, with seven themes to pick from. Downloads, the player, Find and the HUB all look and work better.",
-                    action: "downloads" },
+                    body: "Every screen was redone, and there are seven themes to pick from, each with its own type and art. Downloads, the player, Find and the HUB all look and work better.",
+                    action: "downloads",
+                    image: "qrc:/images/whatsnew/themes.jpg" },
             items: [
-                { title: "A VPN inside the app", body: "Import a WireGuard file and only BATorrent goes through it. Nothing is installed on your computer, and it reconnects on its own." },
-                { title: "Series, the way you watch them", body: "A show has its own page, episodes fold into one row, and the next one plays in the same window." },
-                { title: "A better player", body: "Picture in picture, languages, skip intro, and the wait before a stream happens inside it." },
-                { title: "Games have a page", body: "Saves with a backup, the repack's extras, launch options and newer builds." },
-                { title: "Seven themes", body: "Each with its own type and art, picked from pictures of the app." }
+                { title: "A VPN inside the app", body: "Import a WireGuard file and only BATorrent goes through it. Nothing is installed on your computer, and it reconnects on its own.",
+                  image: "qrc:/images/whatsnew/vpn.jpg" },
+                { title: "Series, the way you watch them", body: "A show has its own page with what you have and what you've watched, episodes fold into one row, and the next one plays in the same window.",
+                  image: "qrc:/images/whatsnew/series.jpg" },
+                { title: "Collections", body: "A film's page shows the rest of its collection, your library keeps them together, and when one ends the player offers the next.",
+                  image: "qrc:/images/whatsnew/collections.jpg" },
+                { title: "A better player", body: "Picture in picture, languages, skip intro, and the wait before a stream happens inside it.",
+                  image: "qrc:/images/whatsnew/player.jpg" },
+                { title: "Games have a page", body: "Saves with a backup, the repack's extras, launch options, achievements and newer builds.",
+                  image: "qrc:/images/whatsnew/game.jpg" },
+                { title: "Updates say where they stand", body: "Settings › Updates shows your version, what's out and when it last checked. Crash reports can be turned off in Settings › Security." }
             ],
             fixes: [
+                "Magnets could stall with the VPN on while direct downloads went on",
+                "Some films played sound over a black window",
                 "Deleted data could start downloading again on its own",
+                "Ctrl+A and Ctrl+V did nothing on Downloads after a visit to Find",
                 "Ratio and availability on the cards were not always right"
             ],
-            note: "This is the biggest one yet. Almost every screen was redrawn, and a lot changed underneath.<br><br>The VPN is new from the ground up: import a WireGuard file and only BATorrent goes through it. It needs no administrator rights and installs nothing, so it can never take your computer's connection down with it. If it drops, it comes back on its own.<br><br>Series, the player and games all got a lot of attention too.<br><br><b>Found a bug or have an idea? <a href=\"https://docs.google.com/forms/d/e/1FAIpQLScdwLxWC-LB4wLuMI6_D3-QNPLNJPpzbob5LU0Y2yMnhaBFrg/viewform\">Tell me here</a></b>, I read everything.<br>Mateus"
+            note: "This is the biggest one yet. Almost every screen was redrawn, and a lot changed underneath.<br><br>The VPN is new from the ground up: import a WireGuard file and only BATorrent goes through it. It needs no administrator rights and installs nothing, so it can never take your computer's connection down with it. If it drops, it comes back on its own.<br><br>Series, films, the player and games all got a lot of attention too. A show has its own page now, and a film knows the rest of its collection.<br><br>Thank you to everyone who ran the betas, and to Sherwan, whose long reports shaped a good part of this one.<br><br><b>Found a bug or have an idea? <a href=\"https://docs.google.com/forms/d/e/1FAIpQLScdwLxWC-LB4wLuMI6_D3-QNPLNJPpzbob5LU0Y2yMnhaBFrg/viewform\">Tell me here</a></b>, I read everything.<br>Mateus"
             , highlights: [
                 "Every screen redone, with seven themes",
                 "A VPN inside the app: only BATorrent goes through it",
                 "Series have their own page, and episodes fold into one row",
+                "A film's collection in Find, in the library and after it ends",
                 "Picture in picture and skip intro in the player",
                 "Games have a page: saves, extras, launch options",
                 "Fixed: deleted data downloading again on its own"
@@ -355,9 +367,31 @@ ModalShell {
                                         onClicked: { var a = dlg.lead.action; dlg.close(); dlg.done(); dlg.actionRequested(a) }
                                     }
                                 }
+                                // a picture of it, when the release brings one
+                                Rectangle {
+                                    visible: !!(dlg.lead && dlg.lead.image)
+                                    Layout.alignment: Qt.AlignTop
+                                    Layout.fillWidth: leadRow.columns === 1
+                                    Layout.preferredWidth: leadRow.columns === 1 ? -1 : 340
+                                    implicitHeight: leadImg.implicitHeight > 0
+                                                    ? width * leadImg.implicitHeight / Math.max(1, leadImg.implicitWidth) : 0
+                                    radius: Theme.rad(9)
+                                    color: Theme.elev
+                                    border.color: Theme.hair; border.width: 1
+                                    clip: true
+                                    Image {
+                                        id: leadImg
+                                        anchors.fill: parent
+                                        anchors.margins: 1
+                                        source: dlg.lead && dlg.lead.image ? dlg.lead.image : ""
+                                        fillMode: Image.PreserveAspectFit
+                                        smooth: true; mipmap: true
+                                        asynchronous: true
+                                    }
+                                }
                                 // a picture of it: the Add window's own rows, with made-up items
                                 Rectangle {
-                                    visible: dlg.lead && dlg.lead.action === "add"
+                                    visible: dlg.lead && dlg.lead.action === "add" && !dlg.lead.image
                                     Layout.alignment: Qt.AlignTop
                                     Layout.fillWidth: leadRow.columns === 1
                                     Layout.preferredWidth: leadRow.columns === 1 ? -1 : 300
@@ -397,11 +431,30 @@ ModalShell {
                                 required property var modelData
                                 required property int index
                                 Layout.fillWidth: true
-                                Layout.preferredHeight: itCol.implicitHeight + 30
+                                Layout.preferredHeight: Math.max(itCol.implicitHeight, it.modelData.image ? 80 : 0) + 30
                                 Rectangle { visible: it.index > 0; width: parent.width; height: 1; color: Theme.hairSoft }
                                 RowLayout {
                                     anchors.fill: parent
-                                    spacing: 12
+                                    spacing: 14
+                                    // a picture of it, 16:10, when the item brings one
+                                    Rectangle {
+                                        visible: !!it.modelData.image
+                                        Layout.preferredWidth: 128
+                                        Layout.preferredHeight: 80
+                                        Layout.alignment: Qt.AlignVCenter
+                                        radius: Theme.rad(6)
+                                        color: Theme.elev
+                                        border.color: Theme.hair; border.width: 1
+                                        clip: true
+                                        Image {
+                                            anchors.fill: parent
+                                            anchors.margins: 1
+                                            source: it.modelData.image || ""
+                                            fillMode: Image.PreserveAspectCrop
+                                            smooth: true; mipmap: true
+                                            asynchronous: true
+                                        }
+                                    }
                                     ColumnLayout {
                                         id: itCol
                                         Layout.fillWidth: true
