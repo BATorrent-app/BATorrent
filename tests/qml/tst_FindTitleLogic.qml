@@ -202,6 +202,17 @@ TestCase {
         compare(rows[0]._idx, 0)
     }
 
+    // An addon answers by the film's IMDb id: its row is this film whatever its
+    // name says ("Sorcerer's Stone", a collection pack). Most of the 223 rows
+    // of a Harry Potter page were dropped for not naming the searched title.
+    function test_anAddonRowIsTheTitleWhateverItsName() {
+        var rows = logic.onTitle([ rel({ name: "Harry Potter 1-8 Complete Collection", fromAddon: true }),
+                                   rel({ name: "Harry Potter and the Chamber of Secrets" }) ],
+                                 function (n) { return 50 })
+        compare(rows.length, 1)
+        compare(rows[0]._idx, 0)
+    }
+
     function test_theNextEpisodeIsTheNextOneOnOffer() {
         var res = [ rel({ name: "e3", season: 1, episode: 3, quality: "1080p", seedsN: 5 }),
                     rel({ name: "e4-720", season: 1, episode: 4, quality: "720p", seedsN: 50 }),

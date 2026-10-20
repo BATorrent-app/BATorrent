@@ -218,6 +218,29 @@ QVariantMap workDetails(const QByteArray &detailsJson, int castLimit)
     const QJsonObject col = root.value(QLatin1String("belongs_to_collection")).toObject();
     m.insert(QStringLiteral("collectionId"), col.value(QLatin1String("id")).toInt());
     m.insert(QStringLiteral("collectionName"), col.value(QLatin1String("name")).toString());
+
+    // The names uploaders use: the original, and the English one from the
+    // appended translations (the US one first). TMDB leaves the English
+    // translation's title empty when the work is English to begin with.
+    const bool isTv = root.contains(QLatin1String("original_name"));
+    const QLatin1String nameKey = isTv ? QLatin1String("name") : QLatin1String("title");
+    const QString original = root.value(isTv ? QLatin1String("original_name")
+                                             : QLatin1String("original_title")).toString();
+    QString english;
+    int englishRank = 0;
+    for (const QJsonValue &v : root.value(QLatin1String("translations")).toObject()
+                                   .value(QLatin1String("translations")).toArray()) {
+        const QJsonObject t = v.toObject();
+        if (t.value(QLatin1String("iso_639_1")).toString() != QLatin1String("en")) continue;
+        const QString name = t.value(QLatin1String("data")).toObject().value(nameKey).toString().trimmed();
+        if (name.isEmpty()) continue;
+        const int rank = t.value(QLatin1String("iso_3166_1")).toString() == QLatin1String("US") ? 2 : 1;
+        if (rank > englishRank) { englishRank = rank; english = name; }
+    }
+    if (english.isEmpty() && root.value(QLatin1String("original_language")).toString() == QLatin1String("en"))
+        english = original;
+    m.insert(QStringLiteral("originalTitle"), original);
+    m.insert(QStringLiteral("englishTitle"), english);
     return m;
 }
 

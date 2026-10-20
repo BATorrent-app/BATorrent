@@ -262,3 +262,31 @@ TEST_CASE("workDetails names a film's collection; collectionParts orders its fil
     CHECK(parts[1].toMap().value("type").toString() == QStringLiteral("movie"));
     CHECK(parts[2].toMap().value("tmdbId").toInt() == 999);   // undated last
 }
+
+// The release search hunts under the names uploaders use, whatever list the
+// title was opened from: the details carry the original name and, from the
+// appended translations, the English one ("Harry Potter e a Pedra Filosofal"
+// was searched alone and found eight Portuguese releases).
+TEST_CASE("workDetails reads the original and the English title", "[tmdbparse]") {
+    const QVariantMap film = TmdbParse::workDetails(QByteArrayLiteral(R"({
+        "title": "Harry Potter e a Pedra Filosofal",
+        "original_title": "Harry Potter and the Philosopher's Stone",
+        "original_language": "en",
+        "translations": { "translations": [
+            { "iso_3166_1": "BR", "iso_639_1": "pt", "data": { "title": "Harry Potter e a Pedra Filosofal" } },
+            { "iso_3166_1": "US", "iso_639_1": "en", "data": { "title": "" } } ] } })"));
+    CHECK(film.value("originalTitle").toString() == QStringLiteral("Harry Potter and the Philosopher's Stone"));
+    // an empty English translation of an English film means its own title
+    CHECK(film.value("englishTitle").toString() == QStringLiteral("Harry Potter and the Philosopher's Stone"));
+
+    const QVariantMap show = TmdbParse::workDetails(QByteArrayLiteral(R"({
+        "name": "Jujutsu Kaisen", "original_name": "呪術廻戦", "original_language": "ja",
+        "translations": { "translations": [
+            { "iso_3166_1": "GB", "iso_639_1": "en", "data": { "name": "Sorcery Fight" } },
+            { "iso_3166_1": "US", "iso_639_1": "en", "data": { "name": "JUJUTSU KAISEN" } } ] } })"));
+    CHECK(show.value("originalTitle").toString() == QStringLiteral("呪術廻戦"));
+    CHECK(show.value("englishTitle").toString() == QStringLiteral("JUJUTSU KAISEN"));   // US first
+
+    const QVariantMap bare = TmdbParse::workDetails(QByteArrayLiteral(R"({"title":"Amélie","original_title":"Le Fabuleux Destin d'Amélie Poulain","original_language":"fr"})"));
+    CHECK(bare.value("englishTitle").toString().isEmpty());
+}

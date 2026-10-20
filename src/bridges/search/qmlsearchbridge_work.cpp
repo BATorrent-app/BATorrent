@@ -63,6 +63,7 @@ void QmlSearchBridge::setWorkContext(const QVariantMap &work)
     m_workCollection.clear();
     m_workCollectionName.clear();
     m_workCollectionId = 0;
+    m_huntTmdbId = 0;
     emit workCollectionChanged();
     emit workChanged();
     emit workStillsChanged();
@@ -89,6 +90,7 @@ void QmlSearchBridge::clearWorkContext()
     m_workCollection.clear();
     m_workCollectionName.clear();
     m_workCollectionId = 0;
+    m_huntTmdbId = 0;
     emit workCollectionChanged();
     emit workChanged();
     emit workStillsChanged();
@@ -152,6 +154,20 @@ void QmlSearchBridge::setDiscovery(DiscoveryService *d)
             m_workCollectionId = col;
             m_workCollectionName = d.value(QStringLiteral("collectionName")).toString();
             m_discovery->fetchCollection(col);
+        }
+        // the names uploaders use, for a drill-down opened without them
+        if (tmdbId == m_huntTmdbId && m_titleSources && m_mode == QLatin1String("all")) {
+            const QStringList more = SearchBridgeUtil::huntTitles(m_activeTitles,
+                { d.value(QStringLiteral("englishTitle")).toString(),
+                  d.value(QStringLiteral("originalTitle")).toString() });
+            if (!more.isEmpty()) {
+                qInfo().noquote() << "[search] also hunting under" << more.join(QStringLiteral(" | "));
+                huntUnder(more, m_workYear, m_workType);
+            }
+            // a film's addons answer by its IMDb id (a show's do per episode)
+            auto &mgr = AddonManager::instance();
+            if (m_workType == QLatin1String("movie") && !m_workImdbId.isEmpty() && mgr.hasStreamAddon())
+                mgr.getStreamsFor(QStringLiteral("movie"), m_workImdbId);
         }
         qInfo().noquote() << "[addon] tmdb" << tmdbId << "imdb" << (m_workImdbId.isEmpty() ? QStringLiteral("none") : m_workImdbId);
         emit workDetailsChanged();
@@ -230,6 +246,26 @@ void QmlSearchBridge::openTitle(const QVariantMap &work)
                          work.value(QStringLiteral("originalTitle")).toString());
 }
 
+void QmlSearchBridge::huntUnder(const QStringList &titles, const QString &year, const QString &type)
+{
+    auto &mgr = AddonManager::instance();
+    const int cat = type == QLatin1String("game") ? 400 : 200;   // 400 = games, 200 = video
+    const auto providers = mgr.searchProviders();
+    const int before = m_pendingSources;
+    for (const QString &t : titles) {
+        m_activeTitles << t;
+        const QString q = SearchBridgeUtil::trackerQuery(t, year, type);
+        for (int i = 0; i < providers.size(); ++i)
+            if (providers[i].enabled) { ++m_pendingSources; mgr.searchWithProvider(i, q, cat); }
+        if (mgr.torrentSearchEnabled()) { ++m_pendingSources; mgr.searchTorrents(q, cat); }
+    }
+    // a late name reopens a search that had settled
+    if (before == 0 && m_pendingSources > 0 && !m_searching) {
+        setSearching(true);
+        setStatus(tr_("search_searching2"));
+    }
+}
+
 void QmlSearchBridge::searchSourcesForWork(const QString &title, const QString &year,
                                            const QString &type, const QString &originalTitle)
 {
@@ -244,7 +280,6 @@ void QmlSearchBridge::searchSourcesForWork(const QString &title, const QString &
     emit resultsChanged();
 
     m_activeQuery = title;
-    auto &mgr = AddonManager::instance();
     const bool isGame = (type == QLatin1String("game"));
     m_aggregate = true;
     m_titleSources = true;          // rows are one picked title → page drops per-row covers
@@ -264,25 +299,21 @@ void QmlSearchBridge::searchSourcesForWork(const QString &title, const QString &
     // original is "Shang-Chi and the Legend of the Ten Rings". Since our TMDB
     // requests carry language=, `title` is already localised: so searching it
     // alone found the dubs and missed everything published under the original
-    // name (usually the majority, and the better-seeded half). Hunt under both.
+    // name (usually the majority, and the better-seeded half). Hunt under each.
     //
-    // Capped at two on purpose. Adding TMDB's alternative_titles here would
-    // multiply requests per provider, and on a private tracker that is how an
-    // account gets banned.
-    QStringList titles{ title };
-    if (!originalTitle.isEmpty() && !SearchBridgeUtil::sameTitle(originalTitle, title))
-        titles << originalTitle;
-    m_activeTitles = titles;
-
-    const int cat = isGame ? 400 : 200;   // 400 = games, 200 = video
-    const auto providers = mgr.searchProviders();
-    for (const QString &t : titles) {
-        // movies disambiguate well with a year; games/series search cleaner by title
-        const QString q = (type == QLatin1String("movie") && !year.isEmpty())
-                        ? t + QLatin1Char(' ') + year : t;
-        for (int i = 0; i < providers.size(); ++i)
-            if (providers[i].enabled) { ++m_pendingSources; mgr.searchWithProvider(i, q, cat); }
-        if (mgr.torrentSearchEnabled()) { ++m_pendingSources; mgr.searchTorrents(q, cat); }
+    // Not every way into a title knows its other names (a library item, a
+    // shelf), so the work's TMDB details, which carry the original and the
+    // English one, add whichever is missing when they arrive.
+    //
+    // Three names at most, on purpose. Adding TMDB's alternative_titles here
+    // would multiply requests per provider, and on a private tracker that is
+    // how an account gets banned.
+    m_activeTitles.clear();
+    huntUnder(SearchBridgeUtil::huntTitles({}, { title, originalTitle }), year, type);
+    m_huntTmdbId = isGame ? 0 : m_workTmdbId;
+    if (m_huntTmdbId > 0 && m_discovery) {
+        if (m_workStills.isEmpty()) fetchWorkStills();
+        else m_discovery->fetchWorkDetails(m_huntTmdbId, m_workType);
     }
     if (m_pendingSources == 0) {
         setSearching(false);
@@ -404,44 +435,81 @@ void QmlSearchBridge::appendAddonEpisodeRows(const QString &videoId, const QList
         const EpisodeTag fileTag = EpisodeGroup::classify(file, m_activeTitles);
         if (fileTag.season > 1 && fileTag.season != season && fileTag.season != imdbSeason) continue;
         if (fileTag.episode < 0 && EpisodeGroup::classify(file).episode > 0) continue;
-        const int seeds = qMax(0, s.seeders);
-        QVariantMap m;
-        m["name"] = name;
+        QVariantMap m = addonRow(s, name, hash);
         // Listed as the episode it was asked for, whatever the torrent's size:
         // only that file is fetched when it is played.
         m["season"] = season;
         m["episode"] = episode;
         m["pack"] = false;
-        m["inPack"] = s.inPack;
-        m["fileIdx"] = s.fileIdx;
-        m["fileName"] = s.fileName;
-        m["fromAddon"] = true;
-        m["sub"] = s.source.isEmpty() ? s.addonName : s.addonName + QStringLiteral(" / ") + s.source;
-        m["provider"] = s.addonName;
-        m["sizeStr"] = s.size > 0 ? formatSize(s.size) : QString();
-        m["seeds"] = s.seeders >= 0 ? QString::number(s.seeders) : QString();
-        m["leech"] = QString();
-        m["hasSeeds"] = seeds > 0;
-        m["releaseGroup"] = detectReleaseGroup(name);
-        m["poster"] = ""; m["coverHash"] = hash;
-        m["seedsN"] = seeds; m["sizeBytes"] = static_cast<qlonglong>(s.size);
-        m["fromCatalog"] = false;
-        m["uploadDate"] = QString();
-        m["hasUri"] = true;
-        fillMediaAttrs(m, name);
-        fillTrust(m, name);
-        QString magnet = s.magnet;
-        if (!magnet.contains(QStringLiteral("&dn=")))
-            magnet += QStringLiteral("&dn=") + QString::fromLatin1(QUrl::toPercentEncoding(name));
-        m_results << m;
-        m_resultMagnets << magnet;
-        m_resultHttp << QString();
-        m_resultTitles << QString();
+        appendAddonRow(m, s.magnet, name);
         ++added;
     }
     qInfo().noquote() << "[addon]" << videoId << "rows added" << added << "of" << streams.size()
                       << "in" << merge.elapsed() << "ms";
-    if (added == 0) return;
+    if (added > 0) flushAddonRowsSoon();
+}
+
+// A film's stream addons answer by its IMDb id, with releases from sites the
+// indexers never see and whatever language they were named in; the indexers
+// only match release names, so a film opened in Portuguese missed most of them.
+void QmlSearchBridge::appendAddonMovieRows(const QString &imdbId, const QList<StreamResult> &streams)
+{
+    if (m_workType != QLatin1String("movie") || imdbId.isEmpty() || imdbId != m_workImdbId) return;   // another title
+    if (m_mode != QLatin1String("all") || !m_titleSources) return;
+    QSet<QString> seen;
+    for (const QVariant &v : std::as_const(m_results))
+        seen.insert(v.toMap().value(QStringLiteral("coverHash")).toString());
+    int added = 0;
+    for (const StreamResult &s : streams) {
+        const QString hash = SearchBridgeUtil::btihFromMagnet(s.magnet).toLower();
+        if (hash.isEmpty() || seen.contains(hash)) continue;   // two addons, or an indexer, had it
+        seen.insert(hash);
+        const QString name = s.torrentName.isEmpty() ? s.title : s.torrentName;
+        appendAddonRow(addonRow(s, name, hash), s.magnet, name);
+        ++added;
+    }
+    qInfo().noquote() << "[addon] movie" << imdbId << "rows added" << added << "of" << streams.size();
+    if (added > 0) flushAddonRowsSoon();
+}
+
+QVariantMap QmlSearchBridge::addonRow(const StreamResult &s, const QString &name, const QString &hash) const
+{
+    const int seeds = qMax(0, s.seeders);
+    QVariantMap m;
+    m["name"] = name;
+    m["inPack"] = s.inPack;
+    m["fileIdx"] = s.fileIdx;
+    m["fileName"] = s.fileName;
+    m["fromAddon"] = true;
+    m["sub"] = s.source.isEmpty() ? s.addonName : s.addonName + QStringLiteral(" / ") + s.source;
+    m["provider"] = s.addonName;
+    m["sizeStr"] = s.size > 0 ? formatSize(s.size) : QString();
+    m["seeds"] = s.seeders >= 0 ? QString::number(s.seeders) : QString();
+    m["leech"] = QString();
+    m["hasSeeds"] = seeds > 0;
+    m["releaseGroup"] = detectReleaseGroup(name);
+    m["poster"] = ""; m["coverHash"] = hash;
+    m["seedsN"] = seeds; m["sizeBytes"] = static_cast<qlonglong>(s.size);
+    m["fromCatalog"] = false;
+    m["uploadDate"] = QString();
+    m["hasUri"] = true;
+    return m;
+}
+
+void QmlSearchBridge::appendAddonRow(QVariantMap m, QString magnet, const QString &name)
+{
+    fillMediaAttrs(m, name);
+    fillTrust(m, name);
+    if (!magnet.contains(QStringLiteral("&dn=")))
+        magnet += QStringLiteral("&dn=") + QString::fromLatin1(QUrl::toPercentEncoding(name));
+    m_results << m;
+    m_resultMagnets << magnet;
+    m_resultHttp << QString();
+    m_resultTitles << QString();
+}
+
+void QmlSearchBridge::flushAddonRowsSoon()
+{
     if (!m_addonRowsFlush) {
         m_addonRowsFlush = new QTimer(this);
         m_addonRowsFlush->setSingleShot(true);

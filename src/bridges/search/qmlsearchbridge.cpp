@@ -86,6 +86,7 @@ QmlSearchBridge::QmlSearchBridge(IEngine *session, QObject *parent)
     connect(&mgr, &AddonManager::streamsFor, this, [this](const QString &id, const QList<StreamResult> &streams) {
         takeNextStreams(id, streams);
         appendAddonEpisodeRows(id, streams);
+        appendAddonMovieRows(id, streams);
     });
     connect(&mgr, &AddonManager::metaVideos, this, [this](const QString &id, const QVariantList &videos) {
         if (m_mode != "episodes" || id != m_epId) return;   // stale or user moved on

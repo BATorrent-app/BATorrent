@@ -227,11 +227,14 @@ private:
     // Type-scoped drill-down for a picked title: games hit game catalogs + the
     // games category; movies/series hit video torrents only (no game catalogs).
     // originalTitle: the work's name in its own language. A work is hunted under
-    // BOTH names when they differ: see the .cpp for why one is never enough.
+    // each name it is released under: see the .cpp for why one is never enough.
     void searchSourcesForWork(const QString &title, const QString &year, const QString &type,
                               const QString &originalTitle = QString());
-    // the names the current drill-down was searched under (localised + original)
+    // the names the current drill-down was searched under (localised, original, English)
     QStringList m_activeTitles;
+    // Hunts the current drill-down under more names; each is a query per provider.
+    void huntUnder(const QStringList &titles, const QString &year, const QString &type);
+    int m_huntTmdbId = 0;   // the TMDB work whose details may still add names to hunt under
 
     int pickBestResult() const;       // index of the best release in m_results, or -1
     void gwResolve();                 // Get&Watch: pick + add once the search settles
@@ -290,6 +293,11 @@ private:
     void resumeNextAsks();
     void takeNextStreams(const QString &videoId, const QList<StreamResult> &streams);
     void appendAddonEpisodeRows(const QString &videoId, const QList<StreamResult> &streams);
+    void appendAddonMovieRows(const QString &imdbId, const QList<StreamResult> &streams);
+    // an addon's torrent as a release row, and that row on the list
+    QVariantMap addonRow(const StreamResult &s, const QString &name, const QString &hash) const;
+    void appendAddonRow(QVariantMap m, QString magnet, const QString &name);
+    void flushAddonRowsSoon();
     // Six addons answer one episode over a few seconds, and every resultsChanged
     // re-derives the whole page: replies landing close together share one.
     QTimer *m_addonRowsFlush = nullptr;

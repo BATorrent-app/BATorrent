@@ -82,17 +82,28 @@ int QmlSearchBridge::pickBestResult() const
         return GameReleasePick::best(cands);
     }
 
+    // A box set holds the film too (an addon names the file), but one film's
+    // pick is that film: sets only count when there is nothing else.
+    bool anySingle = false;
+    for (const QVariant &v : m_results) {
+        const QVariantMap m = v.toMap();
+        if (!m.value(QStringLiteral("inPack")).toBool() && m.value(QStringLiteral("seedsN")).toInt() > 0) {
+            anySingle = true;
+            break;
+        }
+    }
     QList<ReleasePick::Candidate> cands;
     cands.reserve(m_results.size());
     for (const QVariant &v : m_results) {
         const QVariantMap m = v.toMap();
+        const bool skip = anySingle && m.value(QStringLiteral("inPack")).toBool();
         const QString mode = m.value(QStringLiteral("audioMode")).toString();
         const int audioRank = mode == QLatin1String("dub") ? 2
                             : mode == QLatin1String("sub") ? 1 : 0;
         cands.append({ m.value(QStringLiteral("quality")).toString(),
                        m.value(QStringLiteral("native")).toBool() || audioRank > 0,
                        audioRank,
-                       m.value(QStringLiteral("seedsN")).toInt(),
+                       skip ? 0 : m.value(QStringLiteral("seedsN")).toInt(),   // 0 seeds: never picked
                        m.value(QStringLiteral("sizeBytes")).toLongLong() });
     }
     const QSettings s(QStringLiteral("BATorrent"), QStringLiteral("BATorrent"));

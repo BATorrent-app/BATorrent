@@ -69,8 +69,10 @@ QtObject {
 
     // Only rows that name the whole title. Indexers pad a title search with
     // anything sharing a word; the full table under "All releases" keeps them.
+    // An addon's row came by the title's IMDb id, so it is this title whatever
+    // its name says.
     function onTitle(results, relevanceOf) {
-        return tagged(results).filter(function (r) { return relevanceOf(r.name || "") >= 100 })
+        return tagged(results).filter(function (r) { return r.fromAddon || relevanceOf(r.name || "") >= 100 })
     }
 
     function bySeeds(a, b) {

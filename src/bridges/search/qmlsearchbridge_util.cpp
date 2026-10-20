@@ -9,6 +9,7 @@
 #include <libtorrent/error_code.hpp>
 #include <QRegularExpression>
 #include <sstream>
+#include <algorithm>
 
 namespace SearchBridgeUtil {
 
@@ -89,6 +90,37 @@ QVariantMap filmAfter(const QVariantList &films, int tmdbId)
         if (films.at(i).toMap().value(QStringLiteral("tmdbId")).toInt() == tmdbId)
             return films.at(i + 1).toMap();
     return {};
+}
+
+QString trackerQuery(const QString &title, const QString &year, const QString &type)
+{
+    // An apostrophe joins its word ("Philosopher's" is "Philosophers" in a
+    // release name), other punctuation splits; a hyphen stays ("Spider-Man").
+    QString q;
+    for (const QChar &c : title) {
+        if (c == QLatin1Char('\'') || c == QChar(0x2019) || c == QChar(0x2018)) continue;
+        q.append(c.isLetterOrNumber() || c == QLatin1Char('-') || c.isSpace() ? c : QLatin1Char(' '));
+    }
+    q = q.simplified();
+    // movies disambiguate well with a year; games/series search cleaner by title
+    if (type == QLatin1String("movie") && !year.isEmpty()) q += QLatin1Char(' ') + year;
+    return q;
+}
+
+QStringList huntTitles(const QStringList &searched, const QStringList &candidates)
+{
+    constexpr int kMaxTitles = 3;
+    QStringList picked;
+    for (const QString &c : candidates) {
+        if (searched.size() + picked.size() >= kMaxTitles) break;
+        const QString t = c.trimmed();
+        if (t.isEmpty()) continue;
+        auto same = [&t](const QString &s) { return sameTitle(s, t); };
+        if (std::any_of(searched.begin(), searched.end(), same)
+            || std::any_of(picked.begin(), picked.end(), same)) continue;
+        picked << t;
+    }
+    return picked;
 }
 
 } // namespace SearchBridgeUtil

@@ -36,6 +36,8 @@
 #include "torrent/types.h"
 #include "bridges/qmlposterbridge.h"
 #include "bridges/search/qmlsearchbridge_util.h"
+#include "services/discovery/addonmanager.h"
+#include "services/discovery/discoveryservice.h"
 #include "nointernet.h"
 #include "httptestserver.h"
 #include "bridges/qmlupdaterbridge.h"
@@ -1197,6 +1199,129 @@ TEST_CASE("Search util: filmAfter picks the next film of a collection", "[bridge
     CHECK(SearchBridgeUtil::filmAfter(films, 672).value("title").toString() == QStringLiteral("Azkaban"));
     CHECK(SearchBridgeUtil::filmAfter(films, 673).isEmpty());   // the last
     CHECK(SearchBridgeUtil::filmAfter(films, 9).isEmpty());     // not in it
+}
+
+// A picked title is hunted under each name uploaders use, a few at most: the
+// translated one first, then the English and the original ones, the ones a
+// search already ran skipped. Names that arrive later (the details come back
+// after the search started) only add what is missing.
+TEST_CASE("Search util: huntTitles adds the names not searched yet", "[bridge][search]")
+{
+    using SearchBridgeUtil::huntTitles;
+    CHECK(huntTitles({}, {"Viva: A Vida é Uma Festa", "Coco"}) == QStringList{"Viva: A Vida é Uma Festa", "Coco"});
+    CHECK(huntTitles({}, {"Coco", "coco", ""}) == QStringList{"Coco"});
+    // opened without its original name, then the details arrive
+    CHECK(huntTitles({"Harry Potter e a Pedra Filosofal"},
+                     {"Harry Potter and the Philosopher's Stone", "Harry Potter and the Philosopher's Stone"})
+          == QStringList{"Harry Potter and the Philosopher's Stone"});
+    // already hunted under both: nothing new
+    CHECK(huntTitles({"Viva: A Vida é Uma Festa", "Coco"}, {"Coco", "Coco"}).isEmpty());
+    // an anime: the English name joins the translated and the Japanese ones
+    CHECK(huntTitles({"Jujutsu Kaisen: O Filme", "呪術廻戦"}, {"Jujutsu Kaisen 0", "呪術廻戦"})
+          == QStringList{"Jujutsu Kaisen 0"});
+    // never more than three names in all: each is a request per provider
+    CHECK(huntTitles({"A", "B", "C"}, {"D"}).isEmpty());
+}
+
+// Indexers match words, and The Pirate Bay finds nothing at all for a query
+// with an apostrophe: "Harry Potter and the Philosopher's Stone 2001" got 0
+// rows where "Philosophers" gets 21. Release names drop the punctuation too.
+TEST_CASE("Search util: trackerQuery drops the punctuation release names drop", "[bridge][search]")
+{
+    using SearchBridgeUtil::trackerQuery;
+    CHECK(trackerQuery("Harry Potter and the Philosopher's Stone", "2001", "movie")
+          == QStringLiteral("Harry Potter and the Philosophers Stone 2001"));
+    CHECK(trackerQuery(QStringLiteral("Ocean\u2019s Eleven"), "2001", "movie")
+          == QStringLiteral("Oceans Eleven 2001"));
+    CHECK(trackerQuery("Viva: A Vida é Uma Festa", "2017", "movie")
+          == QStringLiteral("Viva A Vida é Uma Festa 2017"));
+    CHECK(trackerQuery("Spider-Man: No Way Home", "", "movie") == QStringLiteral("Spider-Man No Way Home"));
+    // a show or a game searches cleaner without the year
+    CHECK(trackerQuery("Grey's Anatomy", "2005", "series") == QStringLiteral("Greys Anatomy"));
+    CHECK(trackerQuery("呪術廻戦", "2020", "series") == QStringLiteral("呪術廻戦"));
+}
+
+// The indexers only match release names; a film's stream addons (Torrentio and
+// friends) answer by its IMDb id with releases from sites the indexers never
+// see. Episodes asked them already; films never did, and a Harry Potter page
+// in Portuguese listed eight releases.
+TEST_CASE("Search bridge: a film's page lists what its addons have under its IMDb id", "[bridge][search]")
+{
+    app();
+    SessionManager session;
+    QmlSearchBridge bridge(&session);
+    DiscoveryService disco;
+    bridge.setDiscovery(&disco);
+    bridge.openTitle({ { "title", "Harry Potter e a Pedra Filosofal" }, { "type", "movie" },
+                       { "tmdbId", 671 }, { "year", "2001" } });
+    emit disco.workDetailsReady(671, { { "imdbId", "tt0241527" },
+                                       { "originalTitle", "Harry Potter and the Philosopher's Stone" },
+                                       { "englishTitle", "Harry Potter and the Philosopher's Stone" } });
+
+    StreamResult s;
+    s.addonName = QStringLiteral("Torrentio");
+    s.torrentName = QStringLiteral("Harry.Potter.and.the.Philosophers.Stone.2001.1080p.BluRay.x264-OFT");
+    s.title = s.torrentName;
+    s.magnet = QStringLiteral("magnet:?xt=urn:btih:0123456789abcdef0123456789abcdef01234567");
+    s.seeders = 457;
+    s.size = 2000000000;
+    StreamResult other = s;
+    other.torrentName = other.title = QStringLiteral("Some.Other.Film.2001.1080p");
+    other.magnet = QStringLiteral("magnet:?xt=urn:btih:89abcdef0123456789abcdef0123456789abcdef");
+    auto &mgr = AddonManager::instance();
+    emit mgr.streamsFor(QStringLiteral("tt0241527"), { s, s });       // two addons, one torrent
+    emit mgr.streamsFor(QStringLiteral("tt9999999"), { other });      // another film's answer
+
+    auto rowsNamed = [&](const QString &name) {
+        int n = 0;
+        for (const QVariant &v : bridge.results())
+            if (v.toMap().value("name").toString() == name) ++n;
+        return n;
+    };
+    REQUIRE(pumpUntil([&] { return rowsNamed(s.torrentName) > 0; }, 3000));
+    CHECK(rowsNamed(s.torrentName) == 1);
+    CHECK(rowsNamed(other.torrentName) == 0);
+    for (const QVariant &v : bridge.results()) {
+        const QVariantMap m = v.toMap();
+        if (m.value("name").toString() != s.torrentName) continue;
+        CHECK(m.value("seedsN").toInt() == 457);
+        CHECK(m.value("coverHash").toString() == QStringLiteral("0123456789abcdef0123456789abcdef01234567"));
+        CHECK(m.value("episode").toInt() == 0);
+    }
+}
+
+// A film's addons answer with box sets too: the file is in there, but the best
+// pick for one film is that film, not 8 of them in one download.
+TEST_CASE("Search bridge: the best pick for a film is the film, not a box set", "[bridge][search]")
+{
+    app();
+    SessionManager session;
+    QmlSearchBridge bridge(&session);
+    DiscoveryService disco;
+    bridge.setDiscovery(&disco);
+    bridge.openTitle({ { "title", "Harry Potter e a Pedra Filosofal" }, { "type", "movie" },
+                       { "tmdbId", 671 }, { "year", "2001" } });
+    emit disco.workDetailsReady(671, { { "imdbId", "tt0241527" } });
+
+    StreamResult box;
+    box.addonName = QStringLiteral("Torrentio");
+    box.torrentName = box.title = QStringLiteral("Harry.Potter.Complete.Collection.2001-2011.1080p.BluRay.x264");
+    box.magnet = QStringLiteral("magnet:?xt=urn:btih:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+    box.seeders = 900;
+    box.inPack = true;
+    box.fileIdx = 0;
+    StreamResult film = box;
+    film.torrentName = film.title = QStringLiteral("Harry.Potter.and.the.Philosophers.Stone.2001.1080p.BluRay.x264");
+    film.magnet = QStringLiteral("magnet:?xt=urn:btih:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+    film.seeders = 100;
+    film.inPack = false;
+    film.fileIdx = -1;
+    emit AddonManager::instance().streamsFor(QStringLiteral("tt0241527"), { box, film });
+
+    REQUIRE(pumpUntil([&] { return bridge.results().size() >= 2; }, 3000));
+    const int best = bridge.bestResultIndex();
+    REQUIRE(best >= 0);
+    CHECK(bridge.results().at(best).toMap().value("name").toString() == film.torrentName);
 }
 
 TEST_CASE("Session bridge: nextFilmInLibrary finds the library's next film of the collection", "[bridge][session][collection]")

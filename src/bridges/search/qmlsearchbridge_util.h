@@ -22,5 +22,12 @@ QVariantMap titleRowFromWork(const QVariantMap &work);
 // The film after tmdbId among a collection's films (in release order, as
 // TmdbParse::collectionParts gives them); empty when it is the last or absent.
 QVariantMap filmAfter(const QVariantList &films, int tmdbId);
+// The names from `candidates` a picked title should still be hunted under:
+// not empty, not one already in `searched` (or picked), and three names in all
+// at most, since each costs a request per provider.
+QStringList huntTitles(const QStringList &searched, const QStringList &candidates);
+// What an indexer is asked for a title: its words without the punctuation
+// release names leave out, and a film's year after them.
+QString trackerQuery(const QString &title, const QString &year, const QString &type);
 
 } // namespace SearchBridgeUtil
