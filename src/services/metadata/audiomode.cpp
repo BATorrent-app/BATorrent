@@ -7,6 +7,8 @@
 #include <QHash>
 #include <QRegularExpression>
 
+#include <algorithm>
+
 namespace {
 
 struct Tokens { const char *dub; const char *sub; };
@@ -50,23 +52,30 @@ bool matches(const QString &name, const char *pattern)
     return name.contains(*it);
 }
 
-// A dual/multi-audio release plausibly carries the user's dub: matches the
-// existing `native` heuristic so we don't classify inconsistently.
+// A dual-audio release plausibly carries the user's dub. "MULTI" and
+// "Dual-Lat" are not: they are scene tags for French and for Latin American
+// Spanish next to the original, and those languages' tables have them.
 bool multiAudio(const QString &name)
 {
-    return matches(name, "\\bmulti\\b|dual[ ._-]?(a|á)udio|dual[ ._-]?lat");
+    return matches(name, "dual[ ._-]?(a|á)udio");
 }
 
 }
 
 namespace AudioMode {
 
-Mode classify(const QString &releaseName, const QString &userLang)
+Mode classify(const QString &releaseName, const QString &userLang, const QStringList &namedLangs)
 {
     const QString lang = userLang.toUpper();
     if (lang == QLatin1String("EN") || lang.isEmpty()) return Original;
     auto it = tables().constFind(lang);
     if (it == tables().constEnd()) return Original;
+    // Named in other languages, not this one: its bare "Dub"/"Sub" is theirs.
+    // English alone doesn't count, it is the original most releases carry.
+    const bool foreign = !namedLangs.contains(lang) && !namedLangs.contains(QLatin1String("MULTI"))
+        && std::any_of(namedLangs.begin(), namedLangs.end(),
+                       [](const QString &l) { return l != QLatin1String("EN"); });
+    if (foreign) return Original;
 
     // Dub wins ties: a "Dual Áudio + Legendado" release still gives you the dub.
     if (matches(releaseName, it->dub) || multiAudio(releaseName)) return Dubbed;

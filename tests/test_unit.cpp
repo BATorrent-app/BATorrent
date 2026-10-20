@@ -1592,6 +1592,37 @@ TEST_CASE("AudioMode: English and unknown languages have no dub/sub axis", "[aud
     REQUIRE(classify("Movie.2024.Dublado.1080p", "KO") == Original);   // no table
 }
 
+// A Russian release says "Dub + 2x AVO + Original (Eng) + Sub (Rus Eng)": the
+// generic "Dub" and "Sub" are about Russian. It was a Portuguese dub, so Find
+// made it the best pick of a Harry Potter page in Portuguese.
+TEST_CASE("AudioMode: a release in other named languages is no dub in yours", "[audiomode]") {
+    using namespace AudioMode;
+    const QString ru = QStringLiteral("Гарри Поттер и философский камень / Harry Potter and the Philosopher's Stone "
+                                      "[2001 BDRip 1080p] Dub + 2x AVO + Original (Eng) + Sub (Rus Eng)");
+    CHECK(classify(ru, "PT", { "RU", "EN" }) == Original);
+    CHECK(classify(ru, "ES", { "RU", "EN" }) == Original);   // its "Sub" is not Spanish subtitles
+    CHECK(classify(ru, "RU", { "RU", "EN" }) == Dubbed);
+    // the user's language among them, or only English named: the tokens still count
+    CHECK(classify("Filme 2001 Dual Audio PT ITA 1080p", "PT", { "PT", "IT" }) == Dubbed);
+    CHECK(classify("Movie 2001 Legendado ENG 720p", "PT", { "EN" }) == Subbed);
+    CHECK(classify("Filme 2001 Dual Audio 1080p", "PT", {}) == Dubbed);
+}
+
+// "MULTI" is the French scene's tag for French audio plus the original. It made
+// a French box set the best pick of a Harry Potter page in Portuguese.
+TEST_CASE("AudioMode: MULTI is a French dub, not anyone's", "[audiomode]") {
+    using namespace AudioMode;
+    const QString fr = QStringLiteral("Harry.Potter.L.Integrale.Des.8.Films.MULTI.1080p.BluRay.HDLight.AC3.x264-T911");
+    CHECK(classify(fr, "PT", { "MULTI" }) == Original);
+    CHECK(classify(fr, "ES", { "MULTI" }) == Original);
+    CHECK(classify(fr, "FR", { "MULTI" }) == Dubbed);
+    CHECK(classify("Filme 2001 Dual Audio 1080p", "PT", {}) == Dubbed);   // the Brazilian tag still is
+    // and "Dual-Lat" is Latin American Spanish plus the original
+    const QString lat = QStringLiteral("Harry.Potter.and.the.Sorcerers.Stone.2001.1080P-Dual-Lat");
+    CHECK(classify(lat, "PT", {}) == Original);
+    CHECK(classify(lat, "ES", {}) == Dubbed);
+}
+
 TEST_CASE("AudioMode: key strings are stable", "[audiomode]") {
     REQUIRE(AudioMode::key(AudioMode::Dubbed) == "dub");
     REQUIRE(AudioMode::key(AudioMode::Subbed) == "sub");

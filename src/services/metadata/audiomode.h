@@ -5,6 +5,7 @@
 #pragma once
 
 #include <QString>
+#include <QStringList>
 
 // Classifies a release name by how it delivers the *user's* language: dubbed
 // audio, original audio with subtitles, or neither. This is the axis a viewer
@@ -18,7 +19,11 @@ enum Mode { Original = 0, Subbed = 1, Dubbed = 2 };
 // userLang is a 2-letter UI code ("PT", "ES", ...). Returns Original for EN
 // (English content has no dub/sub axis for an English speaker) and for any
 // language without a token table.
-Mode classify(const QString &releaseName, const QString &userLang);
+// namedLangs: the languages the name spells out (attrs' "langs"). When it
+// names some besides English and not the user's, the release is in those: a
+// bare "Dub" or "Sub" in it is about them.
+Mode classify(const QString &releaseName, const QString &userLang,
+              const QStringList &namedLangs = {});
 
 // Stable string for the QML result map / filter ("dub" | "sub" | "original").
 QString key(Mode m);

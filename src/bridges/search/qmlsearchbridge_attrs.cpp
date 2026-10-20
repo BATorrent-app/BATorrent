@@ -113,11 +113,11 @@ void QmlSearchBridge::fillMediaAttrs(QVariantMap &m, const QString &name)
     m["version"] = GameReleasePick::parseVersion(name);
 
     const QString contentLang = ContentLanguage::releaseTag();
-    m["native"] = langs.contains(contentLang)
-                  || (contentLang != QLatin1String("EN") && (multi || langs.contains(QLatin1String("MULTI"))));
     // Dub/sub/original relative to the user's language: the axis the segmented
     // filter acts on (a dubbed-hater and a dub-lover want opposite results).
-    m["audioMode"] = AudioMode::key(AudioMode::classify(name, contentLang));
+    const AudioMode::Mode audio = AudioMode::classify(name, contentLang, langs);
+    m["native"] = langs.contains(contentLang) || audio == AudioMode::Dubbed;
+    m["audioMode"] = AudioMode::key(audio);
 }
 
 void QmlSearchBridge::fillTrust(QVariantMap &m, const QString &name)
