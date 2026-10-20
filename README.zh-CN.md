@@ -33,7 +33,7 @@
 
 BATorrent 是一款基于 [libtorrent](https://www.libtorrent.org/) 的桌面 BT 客户端，qBittorrent 和 Deluge 用的也是这个引擎。它会读取每个种子的名称，找到对应的海报（电影和剧集来自 TMDB，游戏来自 IGDB），把你的下载排成一张张封面，而不是一串文件名。同一部剧的各集会归到一起，视频在下载完成前就能在应用里播放，游戏也能在同一个窗口里安装和启动。
 
-它免费开源，没有广告、账号、"Pro" 版，也没有数据分析。除了种子本身的流量，它只会因为三件事联网：为你媒体库里的内容或你在“查找”中打开的内容，从 TMDB、IGDB 和 Steam 获取封面和详情；向 GitHub 检查更新，可以关掉（[`updater.cpp`](src/services/integrations/updater.cpp)）；以及在官方构建中，应用崩溃时发送崩溃报告。
+它免费开源，没有广告、账号、"Pro" 版，也没有数据分析。除了种子本身的流量，它只会因为三件事联网：为你媒体库里的内容或你在“查找”中打开的内容，从 TMDB、IGDB 和 Steam 获取封面和详情；向 GitHub 检查更新，可以关掉（[`updater.cpp`](src/services/integrations/updater.cpp)）；以及在官方构建中，应用崩溃时发送崩溃报告（也可以关闭）。
 
 ## 三个标签页
 

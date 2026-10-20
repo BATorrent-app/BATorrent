@@ -33,7 +33,7 @@
 
 BATorrent is a desktop torrent client built on [libtorrent](https://www.libtorrent.org/), the engine qBittorrent and Deluge use. It reads each torrent's name, finds the matching poster (TMDB for movies and shows, IGDB for games) and lays your downloads out as covers instead of filenames. Episodes of the same show are grouped together, video plays in the app before the download finishes, and games can be installed and launched from the same window.
 
-It's free and open source. No ads, no account, no "Pro" tier, no analytics. Besides the torrents themselves, it goes online for three things: covers and details from TMDB, IGDB and Steam for what's in your library or what you open in Find; the update check against GitHub, which you can turn off ([`updater.cpp`](src/services/integrations/updater.cpp)); and, in the official builds, a crash report if the app crashes.
+It's free and open source. No ads, no account, no "Pro" tier, no analytics. Besides the torrents themselves, it goes online for three things: covers and details from TMDB, IGDB and Steam for what's in your library or what you open in Find; the update check against GitHub, which you can turn off ([`updater.cpp`](src/services/integrations/updater.cpp)); and, in the official builds, a crash report if the app crashes (which you can also turn off).
 
 ## Three tabs
 
