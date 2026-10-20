@@ -65,7 +65,7 @@ good part of what follows.
   </tr>
 </table>
 
-<p align="center"><img src="https://raw.githubusercontent.com/BATorrent-app/BATorrent/v5.0.0/docs/images/themes.jpg" alt="The seven themes" width="900"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/BATorrent-app/BATorrent/v5.0.0/docs/images/themes.gif" alt="Picking a theme in the setup wizard: the app changes as you click" width="720"></p>
 
 ### Changed
 - Categories follow the kind of file when an item is not a title: installers
