@@ -264,6 +264,11 @@ AppServices AppServices::create(QApplication &app)
 
     Translator::instance().applySaved();
     svc.i18nBridge = new QmlI18nBridge(&app);
+    // the engine words the torrents' states: it changes language with the app
+    QObject::connect(svc.i18nBridge, &QmlI18nBridge::languageChanged, &app,
+                     [i18n = svc.i18nBridge, eng = svc.eng]() {
+        if (eng) eng->applySetting(QStringLiteral("language"), i18n->language());
+    });
 
 #ifndef Q_OS_MACOS
     app.setWindowIcon(svc.themeBridge->trayIcon());

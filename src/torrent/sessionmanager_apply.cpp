@@ -6,6 +6,7 @@
 
 #include "torrent/sessionmanager.h"
 #include "torrent/sessionconfig.h"
+#include "services/platform/translator.h"
 
 #include <QVariant>
 
@@ -78,6 +79,14 @@ bool SessionManager::applySetting(const QString &key, const QVariant &v)
     else if (key == "autoMovePath")        setAutoMove(autoMoveEnabled(), v.toString());
     else if (key == "autoComplete") {
         setAutoCompleteSeconds(SessionConfig::autoCompleteSecondsFromIndex(v.toInt()));
+    }
+    // The UI language: the states the engine words ("Seeding") follow it. A
+    // separate engine read it only at its start, so a change showed the old
+    // language there until the app was restarted.
+    else if (key == "language") {
+        const int lang = v.toInt();
+        if (lang < Translator::English || lang > Translator::Turkish) return false;
+        Translator::instance().setLanguage(static_cast<Translator::Language>(lang));
     }
     else return false;
     return true;

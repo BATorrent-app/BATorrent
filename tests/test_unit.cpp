@@ -2037,3 +2037,19 @@ TEST_CASE("StreamGate: piece deadlines follow playback, not a fixed step", "[uni
         CHECK(StreamGate::windowPieces(0, size) == StreamGate::kMinWindowPieces);
     }
 }
+
+// The engine words the torrents' states ("Seeding"). In split mode it is
+// another process, which read the language only when it started: a change in
+// Settings left the states in the old language until a restart.
+TEST_CASE("SessionManager: the language setting reaches the engine's words", "[unit][session]")
+{
+    app();
+    SessionManager session;
+    const auto before = Translator::instance().language();
+    REQUIRE(session.applySetting(QStringLiteral("language"), int(Translator::Portuguese)));
+    CHECK(Translator::instance().language() == Translator::Portuguese);
+    REQUIRE(session.applySetting(QStringLiteral("language"), int(Translator::English)));
+    CHECK(Translator::instance().language() == Translator::English);
+    CHECK_FALSE(session.applySetting(QStringLiteral("language"), 42));   // no such language
+    Translator::instance().setLanguage(before);
+}
