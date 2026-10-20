@@ -28,7 +28,7 @@ struct MetadataResult {
     int tmdbId = 0;          // TMDB movie/series id (0 if unknown): for episode lookups
     // TMDB's own franchise grouping, from /movie/{id}. 0 when the film belongs
     // to none, which is most of them. Never inferred from a title: that is the
-    // guess Sherwan #22 asks us not to make.
+    // guess TeoVeo #22 asks us not to make.
     int collectionId = 0;
     QString collectionName;
     bool collectionChecked = false;   // /movie/{id} was asked (films cached before it was)

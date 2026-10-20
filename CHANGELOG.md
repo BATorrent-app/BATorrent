@@ -4,8 +4,8 @@
 
 The biggest release BATorrent has had. Almost every screen was redrawn, the
 VPN was rebuilt from scratch, and a show or a film now has a page of its own.
-Thanks to everyone who ran the betas, and to Sherwan, whose reports shaped a
-good part of what follows.
+Thanks to everyone who ran the betas, and to [TeoVeo](https://github.com/TeoVeo), whose reports
+shaped a good part of what follows.
 
 <p align="center"><img src="https://raw.githubusercontent.com/BATorrent-app/BATorrent/v5.0.0/docs/images/grid.jpg" alt="The Downloads tab in grid view" width="900"></p>
 

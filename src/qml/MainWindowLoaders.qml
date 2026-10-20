@@ -36,7 +36,7 @@ Item {
     }
 
     // Players are created per video instead of sharing one Loader: a Loader has
-    // exactly one item, so starting a second video replaced the first. Sherwan
+    // exactly one item, so starting a second video replaced the first. TeoVeo
     // asked to watch more than one at a time, and separate windows are what the
     // OS already knows how to arrange, move between screens and full-screen.
     property var openPlayers: []

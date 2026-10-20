@@ -63,7 +63,7 @@ ModalShell {
                 "Ctrl+A and Ctrl+V did nothing on Downloads after a visit to Find",
                 "Ratio and availability on the cards were not always right"
             ],
-            note: "The biggest one yet: almost every screen was redrawn.<br><br>The VPN is new from the ground up. Only BATorrent goes through it, it installs nothing, and if it drops it comes back on its own.<br><br>Shows have their own page now, and a film knows the rest of its collection.<br><br>Thank you to everyone who ran the betas, and to Sherwan, whose reports shaped a lot of this one.<br><br><b>Found a bug or have an idea? <a href=\"https://docs.google.com/forms/d/e/1FAIpQLScdwLxWC-LB4wLuMI6_D3-QNPLNJPpzbob5LU0Y2yMnhaBFrg/viewform\">Tell me here</a></b>, I read everything.<br>Mateus"
+            note: "The biggest one yet: almost every screen was redrawn.<br><br>The VPN is new from the ground up. Only BATorrent goes through it, it installs nothing, and if it drops it comes back on its own.<br><br>Shows have their own page now, and a film knows the rest of its collection.<br><br>Thank you to everyone who ran the betas, and to <a href=\"https://github.com/TeoVeo\">TeoVeo</a>, whose reports shaped a lot of this one.<br><br><b>Found a bug or have an idea? <a href=\"https://docs.google.com/forms/d/e/1FAIpQLScdwLxWC-LB4wLuMI6_D3-QNPLNJPpzbob5LU0Y2yMnhaBFrg/viewform\">Tell me here</a></b>, I read everything.<br>Mateus"
             , highlights: [
                 "Every screen redone, with seven themes",
                 "A VPN inside the app: only BATorrent goes through it",

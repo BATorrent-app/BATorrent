@@ -25,7 +25,7 @@ Rectangle {
     property bool showInspector: true
     // Present whenever the grid is: selecting a torrent changes what this shows,
     // never whether it is there. A panel that came and went on selection resized
-    // the grid under the cursor, which moved every tile on a click (Sherwan #10).
+    // the grid under the cursor, which moved every tile on a click (TeoVeo #10).
     readonly property bool shown: showInspector && controller.gridView
     // A series group selected: the panel lists its episodes, and the tabs
     // wait for one of them to be picked.

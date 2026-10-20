@@ -148,7 +148,7 @@ Item {
         }
     }
 
-    // --- series grouping (Sherwan #21) ---
+    // --- series grouping (TeoVeo #21) ---
     //
     // The rule that matters is the one he wrote twice: when the match is not
     // certain, do not group. A wrong merge hides a download inside somebody

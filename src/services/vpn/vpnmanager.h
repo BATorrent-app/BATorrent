@@ -95,7 +95,7 @@ signals:
 private:
     struct Profile { QString id; QString name; QString endpoint; QString cc; QString pendingIp; };
 
-    // Which country a profile lands in: Sherwan asked for flags beside the
+    // Which country a profile lands in: TeoVeo asked for flags beside the
     // profiles, and the endpoint is the only honest source (a config named
     // "germany" can point anywhere). Resolved lazily, cached in memory only.
     void resolveCountry(const QString &id);

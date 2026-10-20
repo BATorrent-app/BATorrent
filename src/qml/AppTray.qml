@@ -9,7 +9,7 @@ import Qt.labs.platform as Platform
 Platform.SystemTrayIcon {
     id: root
     visible: true
-    // The dot only exists once a VPN profile does. Sherwan asked for green when
+    // The dot only exists once a VPN profile does. TeoVeo asked for green when
     // bound and red when not; red on a machine that never had a VPN would be an
     // alarm about a feature the user does not use.
     readonly property bool hasVpn: typeof vpn !== "undefined" && vpn.profiles.length > 0

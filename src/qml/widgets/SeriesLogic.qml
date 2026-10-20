@@ -16,7 +16,7 @@ QtObject {
 
     // One card per series instead of one per torrent: three season packs of the
     // same show are three entries in the library and should be one thing on the
-    // shelf (Sherwan #21).
+    // shelf (TeoVeo #21).
     //
     // Grouped by TMDB id and nothing else. Two torrents whose names both parse
     // to the same show still stay apart when either failed to resolve, because

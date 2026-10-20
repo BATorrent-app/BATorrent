@@ -522,7 +522,7 @@ Window {
         case "Movies": return i18n.language, i18n.t("cat_movies")
         case "Series": return i18n.language, i18n.t("cat_series")
         // "Apps" stays the stored value on purpose: it is what every existing
-        // torrent already carries. Only its label became Software, per Sherwan.
+        // torrent already carries. Only its label became Software, per TeoVeo.
         case "Compressed": return i18n.language, i18n.t("cat_compressed")
         case "Music":     return i18n.language, i18n.t("cat_music")
         case "Images":    return i18n.language, i18n.t("cat_images")

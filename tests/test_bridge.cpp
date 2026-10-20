@@ -1008,7 +1008,7 @@ TEST_CASE("Poster model: the state key and the state label agree on every row",
     CHECK(model.data(doneRow, QmlPosterModel::StateStringRole).toString() != seeding);
 }
 
-// A file that is not a title still has a place: Sherwan's installers, disc
+// A file that is not a title still has a place: TeoVeo's installers, disc
 // images and archives sat in no category, so only "Movies" ever showed.
 TEST_CASE("categoryForExtension sorts files that are not titles", "[bridge][category]")
 {

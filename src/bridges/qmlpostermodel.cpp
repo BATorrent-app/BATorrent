@@ -603,7 +603,7 @@ QString QmlPosterModel::categoryForExtension(const QString &extension)
         auto put = [&m](const char *cat, std::initializer_list<const char *> exts) {
             for (const char *e : exts) m.insert(QLatin1String(e), QLatin1String(cat));
         };
-        // disc images sit with archives: both are a container to open (Sherwan)
+        // disc images sit with archives: both are a container to open (TeoVeo)
         put("Compressed", {"zip", "rar", "7z", "tar", "gz", "tgz", "xz", "bz2", "zst", "cab",
                            "iso", "img", "bin", "cue", "nrg", "mdf", "dmg", "vhd", "vhdx"});
         put("Apps", {"exe", "msi", "msix", "appx", "apk", "appimage", "deb", "rpm", "pkg", "bat", "jar"});
