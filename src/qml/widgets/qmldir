@@ -69,3 +69,4 @@ WindowTitleBar 1.0 WindowTitleBar.qml
 ModalShell 1.0 ModalShell.qml
 CloseButton 1.0 CloseButton.qml
 Segmented 1.0 Segmented.qml
+ScrollHint 1.0 ScrollHint.qml

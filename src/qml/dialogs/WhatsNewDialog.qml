@@ -63,7 +63,7 @@ ModalShell {
                 "Ctrl+A and Ctrl+V did nothing on Downloads after a visit to Find",
                 "Ratio and availability on the cards were not always right"
             ],
-            note: "This is the biggest one yet. Almost every screen was redrawn, and a lot changed underneath.<br><br>The VPN is new from the ground up: import a WireGuard file and only BATorrent goes through it. It needs no administrator rights and installs nothing, so it can never take your computer's connection down with it. If it drops, it comes back on its own.<br><br>Series, films, the player and games all got a lot of attention too. A show has its own page now, and a film knows the rest of its collection.<br><br>Thank you to everyone who ran the betas, and to Sherwan, whose long reports shaped a good part of this one.<br><br><b>Found a bug or have an idea? <a href=\"https://docs.google.com/forms/d/e/1FAIpQLScdwLxWC-LB4wLuMI6_D3-QNPLNJPpzbob5LU0Y2yMnhaBFrg/viewform\">Tell me here</a></b>, I read everything.<br>Mateus"
+            note: "The biggest one yet: almost every screen was redrawn.<br><br>The VPN is new from the ground up. Only BATorrent goes through it, it installs nothing, and if it drops it comes back on its own.<br><br>Shows have their own page now, and a film knows the rest of its collection.<br><br>Thank you to everyone who ran the betas, and to Sherwan, whose reports shaped a lot of this one.<br><br><b>Found a bug or have an idea? <a href=\"https://docs.google.com/forms/d/e/1FAIpQLScdwLxWC-LB4wLuMI6_D3-QNPLNJPpzbob5LU0Y2yMnhaBFrg/viewform\">Tell me here</a></b>, I read everything.<br>Mateus"
             , highlights: [
                 "Every screen redone, with seven themes",
                 "A VPN inside the app: only BATorrent goes through it",
@@ -220,10 +220,12 @@ ModalShell {
             Layout.fillWidth: false
             Layout.fillHeight: true
             spacing: 0
-            Flickable {
-                id: letter
+            Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+            Flickable {
+                id: letter
+                anchors.fill: parent
                 clip: true
                 contentWidth: width
                 contentHeight: letterCol.implicitHeight + 60
@@ -275,6 +277,8 @@ ModalShell {
                         }
                     }
                 }
+            }
+            ScrollHint { flick: letter; anchors.bottom: parent.bottom }
             }
             Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hairSoft }
             ColumnLayout {
@@ -499,15 +503,7 @@ ModalShell {
                         }
                     }
                 }
-                Rectangle {
-                    anchors.bottom: parent.bottom
-                    width: parent.width; height: 40
-                    visible: news.contentHeight > news.height && !news.atYEnd
-                    gradient: Gradient {
-                        GradientStop { position: 0; color: "transparent" }
-                        GradientStop { position: 1; color: Theme.elev }
-                    }
-                }
+                ScrollHint { flick: news; anchors.bottom: parent.bottom }
             }
             Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.hairSoft }
             RowLayout {
