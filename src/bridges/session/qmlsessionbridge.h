@@ -61,6 +61,9 @@ class QmlSessionBridge : public QObject
     Q_PROPERTY(QString selectedSize READ selectedSize NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedHash READ selectedHash NOTIFY selectionChanged)   // abbreviated, for display
     Q_PROPERTY(QString selectedInfoHash READ selectedInfoHash NOTIFY selectionChanged)   // full, for lookups
+    // what Copy hands out for the selection: "magnet", "link" (direct
+    // downloads), "mixed", or "" with nothing selected
+    Q_PROPERTY(QString selectedCopyKind READ selectedCopyKind NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedDownloaded READ selectedDownloaded NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedDownSpeed READ selectedDownSpeed NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedUpSpeed READ selectedUpSpeed NOTIFY selectionChanged)
@@ -429,6 +432,7 @@ public:
     QString selectedSize() const;
     QString selectedHash() const;
     QString selectedInfoHash() const;
+    QString selectedCopyKind() const;
     QString selectedDownloaded() const;
     QString selectedDownSpeed() const;
     QString selectedUpSpeed() const;

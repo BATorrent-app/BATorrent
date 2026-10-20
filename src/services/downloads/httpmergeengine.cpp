@@ -203,9 +203,13 @@ bool HttpMergeEngine::torrentHasArchives(int index) const
     return m_inner->torrentHasArchives(index);
 }
 
+// What gets the item again, which is what Copy hands out: the magnet of a
+// torrent, the address of a direct download.
 QString HttpMergeEngine::torrentMagnetUri(int index) const
 {
-    return isHttp(index) ? QString() : m_inner->torrentMagnetUri(index);
+    if (!isHttp(index)) return m_inner->torrentMagnetUri(index);
+    HttpDownload *d = httpAt(index);
+    return d ? d->url().toString() : QString();
 }
 
 QStringList HttpMergeEngine::torrentFileNames(int index) const

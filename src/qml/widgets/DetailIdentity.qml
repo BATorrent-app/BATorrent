@@ -229,7 +229,12 @@ Item {
                         onClicked: session.selectedCompleted ? session.unmarkSelectedCompleted() : session.markSelectedCompleted()
                     }
                     IdentBtn { icon: "qrc:/icons/folder.svg"; tip: (i18n.language, i18n.t("ctx_open_folder")); onClicked: session.openSaveFolder() }
-                    IdentBtn { icon: "qrc:/icons/copy.svg"; tip: (i18n.language, i18n.t("ctx_copy_magnet")); onClicked: session.copyMagnetLink() }
+                    IdentBtn {
+                        readonly property bool link: session.selectedCopyKind === "link"
+                        icon: link ? "qrc:/icons/link.svg" : "qrc:/icons/magnet.svg"
+                        tip: (i18n.language, i18n.t(link ? "ctx_copy_link" : "ctx_copy_magnet"))
+                        onClicked: session.copyMagnetLink()
+                    }
                 }
             }
         }

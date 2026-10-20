@@ -225,7 +225,18 @@ Rectangle {
             }
         }
         TBtn { visible: !toolbar.empty; label: (i18n.language, i18n.t("tb_remove")); icon: "qrc:/icons/trash.svg"; disabled: !toolbar.hasSel; onClicked: toolbar.removeSelected() }
-        TBtn { visible: !toolbar.empty; label: (i18n.language, i18n.t("tb_copy_magnet")); icon: "qrc:/icons/copy.svg"; disabled: !toolbar.hasSel; onClicked: session.copyMagnetLink() }
+        // Copy says what it hands out: a magnet for a torrent, the address
+        // for a direct download, one per line for several
+        TBtn {
+            readonly property string kind: toolbar.hasSel && typeof session !== "undefined" ? session.selectedCopyKind : "magnet"
+            readonly property bool many: toolbar.selCount > 1
+            visible: !toolbar.empty
+            label: (i18n.language, kind === "magnet" ? i18n.t(many ? "tb_copy_magnets" : "tb_copy_magnet")
+                                   : i18n.t(many || kind === "mixed" ? "tb_copy_links" : "tb_copy_link"))
+            icon: kind === "magnet" ? "qrc:/icons/magnet.svg" : "qrc:/icons/link.svg"
+            disabled: !toolbar.hasSel
+            onClicked: session.copyMagnetLink()
+        }
         TBtn { visible: !toolbar.empty; label: (i18n.language, i18n.t("tb_folder")); icon: "qrc:/icons/folder.svg"; hint: (i18n.language, i18n.t("ctx_open_folder")); disabled: !toolbar.hasSel; onClicked: session.openSaveFolder() }
         TGrpDiv { visible: !toolbar.empty }
         TBtn { label: (i18n.language, i18n.t("tb_rss")); icon: "qrc:/icons/rss.svg"; onClicked: toolbar.openRss() }

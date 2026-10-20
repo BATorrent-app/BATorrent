@@ -9,6 +9,7 @@
 #include "torrent/addkind.h"
 #include "torrent/sessionmanager.h"
 #include "services/platform/translator.h"
+#include "services/downloads/httpdownloadmanager.h"   // bat::isHttpRowHash
 
 #include <QClipboard>
 #include <QGuiApplication>
@@ -32,10 +33,38 @@ static void setClipboardRobust(const QString &text)
     }
 }
 
+// The rows Copy works on: every selected one, or the focused one.
+static QList<int> copyRows(const QList<int> &rows, int idx)
+{
+    if (!rows.isEmpty()) return rows;
+    return idx >= 0 ? QList<int>{idx} : QList<int>{};
+}
+
+// A magnet for a torrent, the address for a direct download; with several
+// selected, one per line.
 void QmlSessionBridge::copyMagnetLink()
 {
-    if (!hasSelection()) return;
-    setClipboardRobust(m_session->torrentMagnetUri(m_selectedIndex));
+    QStringList out;
+    const int n = m_session->torrentCount();
+    for (int r : copyRows(m_selectedRows, m_selectedIndex)) {
+        if (r < 0 || r >= n) continue;
+        const QString uri = m_session->torrentMagnetUri(r);
+        if (!uri.isEmpty()) out << uri;
+    }
+    setClipboardRobust(out.join(QLatin1Char('\n')));
+}
+
+QString QmlSessionBridge::selectedCopyKind() const
+{
+    bool links = false, magnets = false;
+    const int n = m_session->torrentCount();
+    for (int r : copyRows(m_selectedRows, m_selectedIndex)) {
+        if (r < 0 || r >= n) continue;
+        (bat::isHttpRowHash(m_session->torrentHashAt(r)) ? links : magnets) = true;
+    }
+    return links && magnets ? QStringLiteral("mixed")
+         : links ? QStringLiteral("link")
+         : magnets ? QStringLiteral("magnet") : QString();
 }
 
 void QmlSessionBridge::copyInfoHash()

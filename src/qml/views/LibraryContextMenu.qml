@@ -135,10 +135,18 @@ DMenu {
         title: (i18n.language, i18n.t("ctx_grp_copy"))
         iconSrc: "qrc:/icons/copy.svg"
         implicitWidth: 220
-        DMenuItem { iconSrc: "qrc:/icons/magnet.svg"; text: (i18n.language, i18n.t("ctx_copy_magnet")); onTriggered: session.copyMagnetLink() }
+        // a magnet for a torrent, the address for a direct download
+        DMenuItem {
+            readonly property string kind: session.selectedCopyKind
+            iconSrc: kind === "magnet" ? "qrc:/icons/magnet.svg" : "qrc:/icons/link.svg"
+            text: (i18n.language, kind === "magnet" ? i18n.t(root.multi ? "tb_copy_magnets" : "ctx_copy_magnet")
+                                  : i18n.t(root.multi || kind === "mixed" ? "tb_copy_links" : "ctx_copy_link"))
+            onTriggered: session.copyMagnetLink()
+        }
         DMenuItem { iconSrc: "qrc:/icons/folder.svg"; text: (i18n.language, i18n.t("ctx_copy_path")); onTriggered: session.copySelectedContentPath() }
         DMenuItem { iconSrc: "qrc:/icons/abc.svg"; text: (i18n.language, i18n.t("ctx_copy_name")); onTriggered: session.copySelectedName() }
-        DMenuItem { iconSrc: "qrc:/icons/hash.svg"; text: (i18n.language, i18n.t("ctx_copy_hash")); onTriggered: session.copyInfoHash() }
+        // a direct download has no info hash
+        DMenuItem { hideWhenDisabled: true; enabled: session.selectedCopyKind === "magnet"; iconSrc: "qrc:/icons/hash.svg"; text: (i18n.language, i18n.t("ctx_copy_hash")); onTriggered: session.copyInfoHash() }
     }
     DMenu {
         sub: true

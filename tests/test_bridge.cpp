@@ -35,6 +35,12 @@
 #include "bridges/qmlposterbridge.h"
 #include "bridges/search/qmlsearchbridge_util.h"
 #include "nointernet.h"
+#include "httptestserver.h"
+#include "services/downloads/httpdownloadmanager.h"
+#include "services/downloads/httpdownload.h"
+#include "services/downloads/httpmergeengine.h"
+#include <QClipboard>
+#include <QGuiApplication>
 
 namespace lt = libtorrent;
 
@@ -1128,4 +1134,45 @@ TEST_CASE("Session bridge: selectedHasVideo is asked of the engine outside the g
     CHECK_FALSE(bridge.selectedSequential());
     bridge.setSelectedSequential(true);
     CHECK(bridge.selectedSequential());       // the setter keeps the answer current
+}
+
+// Copy hands out what gets the item again: a magnet for a torrent, the address
+// for a direct download (it copied nothing for those), one per line for several.
+// The toolbar and the menu name it by selectedCopyKind.
+TEST_CASE("Session bridge: Copy gives a direct download's address and names it", "[bridge][session][copy]")
+{
+    app();
+    QTemporaryDir tmp;
+    REQUIRE(tmp.isValid());
+    QDir().mkpath(tmp.path() + "/dl");
+
+    httptest::RangeServer server(httptest::makePayload(5000));
+    REQUIRE(server.listen(QHostAddress::LocalHost));
+    HttpDownloadManager http;
+    SessionManager inner;
+    while (inner.torrentCount() > 0) inner.removeTorrent(0, false, true);
+    inner.addTorrent(makeFixtureTorrent(tmp.path(), QStringLiteral("copy")), tmp.path() + "/dl");
+    REQUIRE(pumpUntil([&] { return inner.torrentCount() == 1; }));
+    while (http.count() > 0) http.remove(http.at(0)->id(), false);
+    http.add(server.url(), tmp.path());
+    HttpMergeEngine merged(&inner, &http);
+    MetadataResolver resolver;
+    QmlSessionBridge bridge(&merged, &resolver);
+    REQUIRE(merged.torrentCount() == 2);   // the torrent, then the direct download
+
+    bridge.setSelectedRows({1});
+    CHECK(bridge.selectedCopyKind() == QLatin1String("link"));
+    bridge.copyMagnetLink();
+    CHECK(QGuiApplication::clipboard()->text() == server.url().toString());
+
+    bridge.setSelectedRows({0});
+    CHECK(bridge.selectedCopyKind() == QLatin1String("magnet"));
+
+    bridge.setSelectedRows({0, 1});
+    CHECK(bridge.selectedCopyKind() == QLatin1String("mixed"));
+    bridge.copyMagnetLink();
+    const QStringList lines = QGuiApplication::clipboard()->text().split(QLatin1Char('\n'));
+    REQUIRE(lines.size() == 2);
+    CHECK(lines.at(0).startsWith(QLatin1String("magnet:?")));
+    CHECK(lines.at(1) == server.url().toString());
 }
