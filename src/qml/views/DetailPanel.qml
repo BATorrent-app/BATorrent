@@ -13,6 +13,24 @@ import "../widgets"
 
 Rectangle {
     id: detailPanel
+    // The tabs' counts, read in a handler and not a binding: the file and
+    // tracker lists come from the engine over a call that runs the event loop,
+    // and read from a binding a tick arriving meanwhile re-ran it (QML: loop).
+    property var tabCounts: ["", "", "", "", "", ""]
+    function refreshTabCounts() {
+        if (typeof session === "undefined" || !detailPanel.win || !detailPanel.win.hasSel) {
+            tabCounts = ["", "", "", "", "", ""]
+            return
+        }
+        tabCounts = ["", String(session.selectedPeers), String(session.selectedFiles.length),
+                     String(session.selectedTrackers.length), "", ""]
+    }
+    Connections {
+        target: typeof session !== "undefined" ? session : null
+        function onSelectionChanged() { Qt.callLater(detailPanel.refreshTabCounts) }
+        function onSelectionListsChanged() { Qt.callLater(detailPanel.refreshTabCounts) }
+    }
+    Component.onCompleted: Qt.callLater(refreshTabCounts)
     property var win
     property var controller: null
     signal renameFileRequested(int idx, string current)
@@ -88,14 +106,7 @@ Rectangle {
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
                 current: detailPanel.win.detailTab
-                counts: [
-                    "",
-                    detailPanel.win.hasSel ? String(session.selectedPeers) : "",
-                    detailPanel.win.hasSel ? String(session.selectedFiles.length) : "",
-                    detailPanel.win.hasSel ? String(session.selectedTrackers.length) : "",
-                    "",
-                    ""
-                ]
+                counts: detailPanel.tabCounts
                 onSelect: function(idx) { detailPanel.win.detailTab = idx }
             }
         }
