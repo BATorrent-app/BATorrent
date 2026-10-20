@@ -214,6 +214,11 @@ Rectangle {
             }
             Text {
                 anchors.verticalCenter: parent.verticalCenter
+                // what the column leaves it, with an ellipsis: "Semeadura pausada"
+                // or "Tohumlama duraklatıldı" were cut off mid-letter
+                width: Math.min(implicitWidth, Math.max(0, stateRow.width - x
+                                - (etaTxt.visible ? etaTxt.implicitWidth + stateRow.spacing : 0)))
+                elide: Text.ElideRight
                 text: lrow.stateString
                 color: lrow.trouble ? Theme.accentText : (lrow.stopped || lrow.k === "fetching" ? Theme.t3 : Theme.t2)
                 font.pixelSize: 11
@@ -223,6 +228,7 @@ Rectangle {
                 font.family: Theme.fontSans
             }
             Text {
+                id: etaTxt
                 visible: lrow.k === "downloading" && lrow.eta.length > 0 && lrow.eta !== "∞"
                 anchors.verticalCenter: parent.verticalCenter
                 text: "· " + lrow.eta
