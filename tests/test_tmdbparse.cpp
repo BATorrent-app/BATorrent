@@ -93,7 +93,7 @@ TEST_CASE("episodeRows carries what a series screen needs", "[tmdbparse]") {
 TEST_CASE("recommendationRows skips missing posters and respects limit", "[tmdbparse]") {
     const QByteArray json = QByteArrayLiteral(R"({
       "results": [
-        { "title": "A", "poster_path": "/a.jpg", "release_date": "2021-05-01",
+        { "id": 354912, "title": "A", "original_title": "Orig A", "poster_path": "/a.jpg", "release_date": "2021-05-01",
           "vote_average": 7.5, "overview": "oa" },
         { "title": "B", "poster_path": "", "release_date": "2022-01-01",
           "vote_average": 1.0, "overview": "ob" },
@@ -108,13 +108,18 @@ TEST_CASE("recommendationRows skips missing posters and respects limit", "[tmdbp
     REQUIRE(rows.at(0).toMap().value(QStringLiteral("poster")).toString()
             == QLatin1String("https://p/a.jpg"));
     REQUIRE(rows.at(0).toMap().value(QStringLiteral("year")).toString() == QLatin1String("2021"));
-    REQUIRE(!rows.at(0).toMap().contains(QStringLiteral("tmdbId")));
+    // The tile asks for the title's logo by its id, and opening it hunts
+    // releases under the original name too: a "Because you watched" row
+    // without them showed plain names and found no torrents for a film
+    // whose translated title differs (Coco as "Viva: A Vida é Uma Festa").
+    REQUIRE(rows.at(0).toMap().value(QStringLiteral("tmdbId")).toInt() == 354912);
+    REQUIRE(rows.at(0).toMap().value(QStringLiteral("originalTitle")).toString() == QLatin1String("Orig A"));
 }
 
 TEST_CASE("shelfRows includes backdrop and tmdbId", "[tmdbparse]") {
     const QByteArray json = QByteArrayLiteral(R"({
       "results": [
-        { "id": 42, "name": "Show", "poster_path": "/s.jpg", "backdrop_path": "/b.jpg",
+        { "id": 42, "name": "Show", "original_name": "Shou", "poster_path": "/s.jpg", "backdrop_path": "/b.jpg",
           "first_air_date": "2018-11-11", "vote_average": 9.1, "overview": "os" }
       ]
     })");
@@ -125,6 +130,8 @@ TEST_CASE("shelfRows includes backdrop and tmdbId", "[tmdbparse]") {
     REQUIRE(m.value(QStringLiteral("type")).toString() == QLatin1String("series"));
     REQUIRE(m.value(QStringLiteral("tmdbId")).toInt() == 42);
     REQUIRE(m.value(QStringLiteral("backdrop")).toString() == QLatin1String("https://b/b.jpg"));
+    // opened from a shelf, the release search needs the original name too
+    REQUIRE(m.value(QStringLiteral("originalTitle")).toString() == QLatin1String("Shou"));
 }
 
 TEST_CASE("multiSearchRows keeps originalTitle for tracker queries", "[tmdbparse]") {

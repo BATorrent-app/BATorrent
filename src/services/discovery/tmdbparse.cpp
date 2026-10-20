@@ -46,9 +46,7 @@ static QString yearFromDate(const QString &date)
 static QVariantMap catalogCard(const QJsonObject &o,
                                bool isTv,
                                const QString &posterBase,
-                               const QString &backdropBase,
-                               bool withTmdbId,
-                               bool withOriginalTitle)
+                               const QString &backdropBase)
 {
     const QString poster = o.value(QLatin1String("poster_path")).toString();
     if (poster.isEmpty())
@@ -59,11 +57,12 @@ static QVariantMap catalogCard(const QJsonObject &o,
     QVariantMap m;
     m.insert(QStringLiteral("title"),
              o.value(isTv ? QLatin1String("name") : QLatin1String("title")).toString());
-    if (withOriginalTitle) {
-        m.insert(QStringLiteral("originalTitle"),
-                 o.value(isTv ? QLatin1String("original_name")
-                              : QLatin1String("original_title")).toString());
-    }
+    // Every card carries its id and original name, whatever list it came
+    // from: a tile asks for the title's logo by the id, and opening it hunts
+    // releases under the original name as well as the translated one.
+    m.insert(QStringLiteral("originalTitle"),
+             o.value(isTv ? QLatin1String("original_name")
+                          : QLatin1String("original_title")).toString());
     m.insert(QStringLiteral("poster"), posterBase + poster);
     if (!backdropBase.isEmpty()) {
         const QString backdrop = o.value(QLatin1String("backdrop_path")).toString();
@@ -74,8 +73,7 @@ static QVariantMap catalogCard(const QJsonObject &o,
     m.insert(QStringLiteral("rating"), o.value(QLatin1String("vote_average")).toDouble());
     m.insert(QStringLiteral("overview"), o.value(QLatin1String("overview")).toString());
     m.insert(QStringLiteral("type"), isTv ? QStringLiteral("series") : QStringLiteral("movie"));
-    if (withTmdbId)
-        m.insert(QStringLiteral("tmdbId"), o.value(QLatin1String("id")).toInt());
+    m.insert(QStringLiteral("tmdbId"), o.value(QLatin1String("id")).toInt());
     return m;
 }
 
@@ -229,7 +227,7 @@ QVariantList collectionParts(const QByteArray &json, const QString &posterBase,
     QVariantList items;
     const QJsonArray parts = QJsonDocument::fromJson(json).object().value(QLatin1String("parts")).toArray();
     for (const QJsonValue &v : parts) {
-        const QVariantMap m = catalogCard(v.toObject(), false, posterBase, backdropBase, true, true);
+        const QVariantMap m = catalogCard(v.toObject(), false, posterBase, backdropBase);
         if (!m.isEmpty()) items.append(m);
     }
     std::stable_sort(items.begin(), items.end(), [](const QVariant &a, const QVariant &b) {
@@ -250,7 +248,7 @@ QVariantList recommendationRows(const QByteArray &json,
     if (limit <= 0)
         return items;
     for (const QJsonValue &v : resultsArray(json)) {
-        const QVariantMap m = catalogCard(v.toObject(), isTv, posterBase, {}, false, false);
+        const QVariantMap m = catalogCard(v.toObject(), isTv, posterBase, {});
         if (m.isEmpty())
             continue;
         items.append(m);
@@ -267,7 +265,7 @@ QVariantList shelfRows(const QByteArray &json,
 {
     QVariantList items;
     for (const QJsonValue &v : resultsArray(json)) {
-        const QVariantMap m = catalogCard(v.toObject(), isTv, posterBase, backdropBase, true, false);
+        const QVariantMap m = catalogCard(v.toObject(), isTv, posterBase, backdropBase);
         if (!m.isEmpty())
             items.append(m);
     }
@@ -284,7 +282,7 @@ QVariantList multiSearchRows(const QByteArray &json, const QString &posterBase,
         if (mt != QLatin1String("movie") && mt != QLatin1String("tv"))
             continue;
         const bool isTv = mt == QLatin1String("tv");
-        const QVariantMap m = catalogCard(o, isTv, posterBase, backdropBase, true, true);
+        const QVariantMap m = catalogCard(o, isTv, posterBase, backdropBase);
         if (!m.isEmpty())
             items.append(m);
     }
