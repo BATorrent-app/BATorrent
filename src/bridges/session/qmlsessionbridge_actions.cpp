@@ -186,7 +186,8 @@ void QmlSessionBridge::fetchEngineFlags(const QString &hash)
     if (row < 0) { m_engineFlags.remove(hash); return; }
     EngineFlags f;
     // A game that bundles cutscene/intro videos must not offer Play: Install wins.
-    f.playable = m_session->torrentHasVideo(row) && !isGameTorrent(row);
+    f.isGame = isGameTorrent(row);
+    f.playable = m_session->torrentHasVideo(row) && !f.isGame;
     f.sequential = m_session->isSequentialDownload(row);
     f.forceStart = m_session->isForceStart(row);
     f.superSeeding = m_session->isSuperSeeding(row);
@@ -194,7 +195,8 @@ void QmlSessionBridge::fetchEngineFlags(const QString &hash)
     const auto old = m_engineFlags.constFind(hash);
     const bool changed = old == m_engineFlags.constEnd()
                          || old->playable != f.playable || old->sequential != f.sequential
-                         || old->forceStart != f.forceStart || old->superSeeding != f.superSeeding;
+                         || old->forceStart != f.forceStart || old->superSeeding != f.superSeeding
+                         || old->isGame != f.isGame;
     m_engineFlags.insert(hash, f);
     if (changed) emit selectionChanged();
 }

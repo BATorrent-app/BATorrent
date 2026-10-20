@@ -535,14 +535,18 @@ void QmlSessionBridge::onGameTorrentFinished(const QString &name, const QString 
         emit movieReady(infoHash, name);
 }
 
+// From the per-torrent answers asked for outside any binding: isGameTorrent
+// reads the file list, a call to the engine that runs the event loop, and the
+// context menu reads these from bindings (QML reported a loop on isGame).
 bool QmlSessionBridge::selectedIsGame() const
 {
-    return hasSelection() && isGameTorrent(m_selectedIndex);
+    const EngineFlags *f = selectedEngineFlags();
+    return f && f->isGame;
 }
 
 int QmlSessionBridge::selectedGameState() const
 {
-    if (!hasSelection() || !isGameTorrent(m_selectedIndex)) return -1;
+    if (!selectedIsGame()) return -1;
     const QString hash = m_session->torrentHashAt(m_selectedIndex);
     const TorrentInfo info = m_session->torrentAt(m_selectedIndex);
     return gameInstallState(hash, GameExeDetect::dataComplete(info.completed, info.progress));

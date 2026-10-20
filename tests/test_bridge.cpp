@@ -1133,6 +1133,8 @@ TEST_CASE("Session bridge: selectedHasVideo is asked of the engine outside the g
     QSignalSpy changed(&bridge, &QmlSessionBridge::selectionChanged);
     REQUIRE(pumpUntil([&] { return bridge.selectedHasVideo(); }, 3000));
     CHECK(changed.count() > 0);
+    CHECK_FALSE(bridge.selectedIsGame());     // a film: no Install in the menu
+    CHECK(bridge.selectedGameState() == -1);
 
     CHECK_FALSE(bridge.selectedSequential());
     bridge.setSelectedSequential(true);
