@@ -1,5 +1,105 @@
 # Changelog
 
+## v5.0.0 (2026-10-20)
+
+The biggest release BATorrent has had. Almost every screen was redrawn, the
+VPN was rebuilt from scratch, and a show or a film now has a page of its own.
+Thanks to everyone who ran the betas, and to Sherwan, whose reports shaped a
+good part of what follows.
+
+<p align="center"><img src="https://raw.githubusercontent.com/BATorrent-app/BATorrent/v5.0.0/docs/images/grid.jpg" alt="The Downloads tab in grid view" width="900"></p>
+
+### Added
+- **A new look.** Downloads, the player, Find, the HUB, Add, the setup wizard,
+  notifications, Remove, Free up space, the RSS window and the smaller dialogs
+  were all redone. A title strip with back/forward over the navigation, and
+  the place you are in, in the middle of it.
+- **Seven themes**, each with its own type and art: Default, Cinema, Light,
+  Midnight, Sakura, Dark Star and Matrix. Behind your library, a clean
+  background, the theme's art or a picture of your own. Themes of your own
+  colours, made in a new Appearance page.
+- **The VPN, rebuilt inside the app.** Import a WireGuard `.conf` and connect.
+  Only BATorrent goes through it: the rest of the computer keeps its normal
+  connection, there is no administrator prompt and nothing is installed on the
+  system. It reconnects by itself if it drops; with the kill switch on, the
+  torrents stop until it is back. On servers that offer it (Proton's P2P
+  servers), it opens a port so peers can reach you.
+- **A page for every title in Find.** A show's lists its episodes by season,
+  with what you have and what you have watched. A film's lists its releases,
+  ordered by who is sharing them, with a recommended pick and the rest of its
+  collection underneath.
+- **Collections.** Films of one TMDB collection sit together in the library,
+  in release order. When a film ends, the player offers the next one: played
+  at once if you have it, or its page in Find if you don't.
+- **Series and streaming.** Episodes of one show fold into one row, season
+  packs are understood, the wait before a stream happens inside the player and
+  says what it is waiting for, and the next episode plays in the same window.
+- **Player.** Picture in picture, audio and subtitle languages, intro
+  skipping, the keyboard keys a player should have, and video decoded in a
+  separate, sandboxed process. The card for what comes next shows up where
+  the end credits begin, when the file marks them.
+- **Games.** A game has a page: its saves (with a dated backup), the
+  languages and extras of the repack, a newer build when the catalogs have
+  one, launch options, verify and uninstall. Achievements with their own
+  unlock card and sound. One-click installs for FitGirl, DODI, OnlineFix and
+  GOG installers.
+- **A setup wizard** on first run, and after an update from 4.x: language,
+  look, library layout and where things are saved, with a picture of the app
+  changing as you pick.
+- **A menu bar on Alt.** File, Torrent, Settings and Help appear in the title
+  strip; Settings › Appearance can keep them there.
+- **Updates say where they stand.** Settings › Updates shows the installed
+  version, whether a newer one is out, when it was last checked and why a
+  check failed, with Check now.
+- **Copy says what it copies:** the magnet of a torrent, the address of a
+  direct download, one per line with several selected.
+
+<table>
+  <tr>
+    <td width="50%"><img src="https://raw.githubusercontent.com/BATorrent-app/BATorrent/v5.0.0/docs/images/find.jpg" alt="A film's page in Find"></td>
+    <td width="50%"><img src="https://raw.githubusercontent.com/BATorrent-app/BATorrent/v5.0.0/docs/images/series.jpg" alt="A show's page in Find"></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="https://raw.githubusercontent.com/BATorrent-app/BATorrent/v5.0.0/docs/images/player.jpg" alt="The player"></td>
+    <td width="50%"><img src="https://raw.githubusercontent.com/BATorrent-app/BATorrent/v5.0.0/docs/images/wizard.jpg" alt="The setup wizard"></td>
+  </tr>
+</table>
+
+<p align="center"><img src="https://raw.githubusercontent.com/BATorrent-app/BATorrent/v5.0.0/docs/images/themes.jpg" alt="The seven themes" width="900"></p>
+
+### Changed
+- Categories follow the kind of file when an item is not a title: installers
+  are Software, archives and disc images Compressed, and there are built-in
+  Music, Images, Documents and Torrent categories.
+- Removed torrents stay restorable for 30 days (50 at most), and their covers
+  go with them after that.
+- The VPN's kill switch is on until you turn it off.
+- Progress reads "500 MB / 6.29 GB"; a file with no art shows its kind (ISO,
+  RAR, EXE) in the middle of its card from the start.
+- Refresh is back on the toolbar, and right-clicking Pause offers Pause all and
+  Resume all.
+
+### Fixed
+- Magnets that stalled while direct downloads went on, after the engine had
+  restarted with the VPN on.
+- Films that played sound over a black window: the player now tries again
+  decoding in software, and if there is still no picture, says so and offers
+  another player.
+- A click on a title under the best match in Find did nothing.
+- Ctrl+A and Ctrl+V did nothing on Downloads after a visit to Find.
+- A finished direct download whose file was deleted said Completed for ever.
+- The filter counts stayed up after the last item was removed.
+- With several items selected and all paused, the button said Pause.
+- Torrent states stayed in the old language after a language change.
+- A narrow card cut "Downloading" to "Down…"; a long state was cut mid-letter
+  in the list.
+- On light themes, an off switch and the section borders in Settings vanished.
+- Deleted data no longer downloads again on its own.
+- Honest ratio and availability on the cards.
+- Many smaller things from two design reviews, a code review and the betas.
+
+---
+
 ## v5.0.0-beta2 (2026-10-19)
 
 A test build of 5.0. It is a pre-release: the app only offers it to people on

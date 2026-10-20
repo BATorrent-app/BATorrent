@@ -33,7 +33,7 @@
 
 BATorrent is a desktop torrent client built on [libtorrent](https://www.libtorrent.org/), the engine qBittorrent and Deluge use. It reads each torrent's name, finds the matching poster (TMDB for movies and shows, IGDB for games) and lays your downloads out as covers instead of filenames. Episodes of the same show are grouped together, video plays in the app before the download finishes, and games can be installed and launched from the same window.
 
-It's free and open source. No ads, no account, no "Pro" tier. The only request it makes on its own is the update check against GitHub, and you can turn that off ([`updater.cpp`](src/services/integrations/updater.cpp)).
+It's free and open source. No ads, no account, no "Pro" tier, no analytics. Besides the torrents themselves, it goes online for three things: covers and details from TMDB, IGDB and Steam for what's in your library or what you open in Find; the update check against GitHub, which you can turn off ([`updater.cpp`](src/services/integrations/updater.cpp)); and, in the official builds, a crash report if the app crashes.
 
 ## Three tabs
 
@@ -49,25 +49,31 @@ Your torrents as a grid of covers or a dense list, with the details of whatever 
 
 ### Find and HUB
 
-**Find** is where you look for something new: a front page of trending movies, shows and games, and a search that goes across your sources and puts the best match first. **HUB** is the library of what you already have: continue watching, continue playing, and everything grouped into games, series and movies.
+**Find** is where you look for something new: a front page of trending movies, shows and games, and a search that goes across your sources and puts the best match first. Every title has its own page. A film's lists its releases, sorted by who is sharing them, with a recommended pick and the rest of its collection underneath. A show's lists its episodes by season, with what you have and what you've watched.
 
 <table>
   <tr>
-    <td width="50%"><img src="docs/images/find.jpg" alt="Find: a featured title and trending movies"></td>
-    <td width="50%"><img src="docs/images/hub.jpg" alt="HUB: continue watching, continue playing and the library"></td>
+    <td width="50%"><img src="docs/images/find.jpg" alt="Find: a film's page with its releases and the rest of its collection"></td>
+    <td width="50%"><img src="docs/images/series.jpg" alt="Find: a show's page with its episodes, watched and in your library"></td>
   </tr>
   <tr>
-    <td align="center"><sub>Find</sub></td>
-    <td align="center"><sub>HUB</sub></td>
+    <td align="center"><sub>A film in Find</sub></td>
+    <td align="center"><sub>A show in Find</sub></td>
   </tr>
 </table>
 
-## The player
-
-The built-in player uses FFmpeg, so MKV, AVI and WebM play directly. It downloads the start of the file first, so you can watch while the rest comes in. It remembers where you stopped, skips intros, offers the next episode at the end, and finds subtitles for you (via SubDL) or loads the `.srt` sitting next to the file.
+**HUB** is the library of what you already have: continue watching, continue playing, and everything grouped into games, series and movies.
 
 <p align="center">
-  <img src="docs/images/player.jpg" alt="The built-in player with subtitles and the next episode lined up" width="900">
+  <img src="docs/images/hub.jpg" alt="HUB: continue watching, continue playing and the library" width="900">
+</p>
+
+## The player
+
+The built-in player uses FFmpeg, so MKV, AVI and WebM play directly. It downloads the start of the file first, so you can watch while the rest comes in. It remembers where you stopped, skips intros, and at the end offers the next episode, or the next film of a collection. It finds subtitles for you (via SubDL) or loads the `.srt` sitting next to the file. The decoding runs in a separate, sandboxed process, so a malformed file can't take the app down with it.
+
+<p align="center">
+  <img src="docs/images/player.jpg" alt="The built-in player, with the next episode lined up" width="900">
 </p>
 
 If you have a [Real-Debrid](https://real-debrid.com) or [TorBox](https://torbox.app) account and the torrent is already cached there, it streams from them instead, and nothing is downloaded or seeded on your machine.
@@ -75,16 +81,21 @@ If you have a [Real-Debrid](https://real-debrid.com) or [TorBox](https://torbox.
 ## What else it does
 
 - **Games.** Covers from IGDB, install and launch from the HUB, play time and achievements. Your game downloads end up looking like a launcher instead of a folder of setup files.
-- **Privacy.** Bind to your VPN's network interface with a kill switch that pauses everything if the tunnel drops, import WireGuard profiles, and check for leaks with the built-in IP test. There's also a private-tracker mode, a Tor preset and blocking of known leecher clients.
+- **VPN.** Import a WireGuard `.conf` (Proton, Mullvad, IVPN...) and connect. Only BATorrent goes through it; the rest of the computer keeps its normal connection, and nothing is installed on the system. It reconnects on its own if it drops, the kill switch stops the torrents until it's back, and on servers that offer it, it opens a port so peers can reach you.
+- **Privacy.** A leak test that shows the IP your peers see, binding to a network interface, a private-tracker mode, a Tor preset and blocking of known leecher clients.
 - **Adding things.** Paste a magnet, a link or an info-hash anywhere with Ctrl+V. RSS with regex filters, a watch folder, drag and drop, and plain HTTP/HTTPS downloads.
 - **Remote control.** A WebUI you open on your phone by scanning a QR code. The code is generated on your machine.
 - **Organising.** Categories and tags, auto-extract of archives, ratio and time limits, a bandwidth schedule by hour and day, and an alternate speed (the turtle) one click away.
-- **Looks.** Dark, Light, Midnight, Sakura, Dark Star, or your own colours. A command palette on Ctrl/⌘+K. Nine languages.
+- **Looks.** Seven themes, each with its own type and art, or one of your own; a clean background, the theme's art or your own picture. A command palette on Ctrl/⌘+K. Nine languages, and a short setup on first run.
+
+<p align="center">
+  <img src="docs/images/themes.jpg" alt="The Downloads tab in the seven themes: Default, Cinema, Light, Midnight, Sakura, Dark Star and Matrix" width="900">
+</p>
 
 <details>
 <summary><b>The full list</b></summary>
 
-Per-file priority, sequential download, tracker injection, content-layout control, excluded-file regex, a separate temp folder, seeding windows, auto-pause when files go missing, Plex/Jellyfin/Emby library refresh, Telegram and Discord notifications, import from qBittorrent, `.torrent` creation, IP blocklists, protocol encryption, a Gitee update mirror, stable and beta update channels, shutdown when downloads finish, a Windows Defender exclusion helper, backup and restore, recently removed history, force start, a log viewer with diagnostics, and keyboard shortcuts for most things.
+Per-file priority, sequential download, tracker injection, content-layout control, excluded-file regex, a separate temp folder, seeding windows, auto-pause when files go missing, Plex/Jellyfin/Emby library refresh, Telegram and Discord notifications, import from qBittorrent, `.torrent` creation, IP blocklists, protocol encryption, a Gitee update mirror, stable and beta update channels, shutdown when downloads finish, a Windows Defender exclusion helper, backup and restore, recently removed history, force start, a log viewer with diagnostics, a menu bar on Alt, films of one collection grouped in the library, and keyboard shortcuts for most things.
 
 </details>
 
