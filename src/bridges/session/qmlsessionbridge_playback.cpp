@@ -513,6 +513,34 @@ void QmlSessionBridge::fetchSkipTimes(const QString &infoHash, int fileIndex)
     });
 }
 
+QVariantMap QmlSessionBridge::nextFilmInLibrary(const QString &infoHash) const
+{
+    QVariantMap out;
+    if (!m_resolver || !m_resolver->hasCached(infoHash)) return out;
+    const MetadataResult cur = m_resolver->cached(infoHash);
+    if (!cur.valid || cur.contentType != ContentType::Movie || cur.collectionId <= 0) return out;
+    out[QStringLiteral("collectionId")] = cur.collectionId;
+    out[QStringLiteral("tmdbId")] = cur.tmdbId;
+    // the closest later film of the same collection, by year
+    QString best;
+    MetadataResult bestMeta;
+    const int n = m_session->torrentCount();
+    for (int i = 0; i < n; ++i) {
+        const QString h = m_session->torrentHashAt(i);
+        if (h.isEmpty() || h.compare(infoHash, Qt::CaseInsensitive) == 0 || !m_resolver->hasCached(h)) continue;
+        const MetadataResult m = m_resolver->cached(h);
+        if (!m.valid || m.contentType != ContentType::Movie || m.collectionId != cur.collectionId) continue;
+        if (m.tmdbId == cur.tmdbId || m.year <= cur.year) continue;
+        if (best.isEmpty() || m.year < bestMeta.year) { best = h; bestMeta = m; }
+    }
+    if (best.isEmpty()) return out;
+    out[QStringLiteral("infoHash")] = best;
+    out[QStringLiteral("title")] = bestMeta.title;
+    out[QStringLiteral("year")] = bestMeta.year;
+    out[QStringLiteral("poster")] = bestMeta.posterPath;
+    return out;
+}
+
 QString QmlSessionBridge::posterForHash(const QString &infoHash) const
 {
     if (!m_resolver || !m_resolver->hasCached(infoHash)) return {};

@@ -269,6 +269,9 @@ Rectangle {
     // Next episode for a player showing something taken from this page.
     function nextEpisodeFor(hash, fileIdx) { return titlePicked ? titleStagePane.nextFor(hash, fileIdx) : null }
     function playNextEpisode(next) { titleStagePane.playNext(next) }
+    // The next film of a collection, from a player's card: its page here.
+    signal pageWanted()
+    function showFilm(card) { pageWanted(); openTitle(card, -1) }
 
     // A title browse already knows: its page directly, no search to pick it from.
     property bool openedFromBrowse: false

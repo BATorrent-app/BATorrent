@@ -97,4 +97,19 @@ ColumnLayout {
         rows: panel.rows
         sortKey: panel.sortKey
     }
+
+    // The rest of the film's TMDB collection, in release order: the next one
+    // is a click away. Not there for a film of none.
+    PosterShelf {
+        Layout.fillWidth: true
+        Layout.topMargin: 18
+        visible: !panel.isGame && items.length > 0
+        landscape: true
+        showSeeAll: false
+        label: (i18n.language, panel.sv.api && panel.sv.api.workCollectionName.length > 0
+                ? panel.sv.api.workCollectionName : i18n.t("find_same_collection"))
+        items: panel.sv.api ? panel.sv.api.workCollection : []
+        flickH: 100000   // always in view: it sits at the foot of a page that does not scroll
+        onActivated: function (it) { if (panel.sv.api) panel.sv.api.openTitle(it) }
+    }
 }

@@ -301,6 +301,11 @@ public:
     // Resolved cover path for a torrent (the show's poster), used by the
     // player's next-episode end card.
     Q_INVOKABLE QString posterForHash(const QString &infoHash) const;
+    // The film after this one in its TMDB collection, when the library has it:
+    // { infoHash, title, year, poster }. Without it, infoHash is empty and
+    // { collectionId, tmdbId } say what to ask TMDB for; both 0 for a film of
+    // no collection, or anything that is not a film.
+    Q_INVOKABLE QVariantMap nextFilmInLibrary(const QString &infoHash) const;
     // MKV chapters of the playing file → [{startMs, endMs, name, kind}] where
     // kind is "intro"/"credits"/"": drives the player's skip chip. Empty for
     // non-mkv or when the chapters element isn't downloaded yet.

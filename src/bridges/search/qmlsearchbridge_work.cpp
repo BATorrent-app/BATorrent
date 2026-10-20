@@ -60,6 +60,10 @@ void QmlSearchBridge::setWorkContext(const QVariantMap &work)
     m_workMaker = work.value(QStringLiteral("maker")).toString();
     m_workImdbId.clear();
     m_addonEpisodesWaiting.clear();
+    m_workCollection.clear();
+    m_workCollectionName.clear();
+    m_workCollectionId = 0;
+    emit workCollectionChanged();
     emit workChanged();
     emit workStillsChanged();
     emit workLogoChanged();
@@ -82,9 +86,20 @@ void QmlSearchBridge::clearWorkContext()
     m_workMaker.clear();
     m_workImdbId.clear();
     m_addonEpisodesWaiting.clear();
+    m_workCollection.clear();
+    m_workCollectionName.clear();
+    m_workCollectionId = 0;
+    emit workCollectionChanged();
     emit workChanged();
     emit workStillsChanged();
     emit workDetailsChanged();
+}
+
+void QmlSearchBridge::findNextFilm(const QString &infoHash, int collectionId, int tmdbId)
+{
+    if (!m_discovery || collectionId <= 0 || tmdbId <= 0 || infoHash.isEmpty()) return;
+    m_nextFilmAsks.insert(collectionId, qMakePair(infoHash, tmdbId));
+    m_discovery->fetchCollection(collectionId);
 }
 
 void QmlSearchBridge::fetchWorkStills()
@@ -131,10 +146,34 @@ void QmlSearchBridge::setDiscovery(DiscoveryService *d)
         m_workCast = d.value(QStringLiteral("cast")).toStringList();
         m_workSeasonCount = d.value(QStringLiteral("seasons")).toInt();
         m_workImdbId = d.value(QStringLiteral("imdbId")).toString();
+        // a film of a collection: ask for the rest of it
+        const int col = m_workType == QLatin1String("movie") ? d.value(QStringLiteral("collectionId")).toInt() : 0;
+        if (col > 0 && col != m_workCollectionId) {
+            m_workCollectionId = col;
+            m_workCollectionName = d.value(QStringLiteral("collectionName")).toString();
+            m_discovery->fetchCollection(col);
+        }
         qInfo().noquote() << "[addon] tmdb" << tmdbId << "imdb" << (m_workImdbId.isEmpty() ? QStringLiteral("none") : m_workImdbId);
         emit workDetailsChanged();
         const auto waiting = std::exchange(m_addonEpisodesWaiting, {});
         for (const auto &se : waiting) fetchEpisodeStreams(se.first, se.second);
+    });
+    // a player asked what comes after its film
+    connect(m_discovery, &DiscoveryService::collectionReady, this,
+            [this](int collectionId, const QVariantList &films) {
+        const auto ask = m_nextFilmAsks.take(collectionId);
+        if (ask.first.isEmpty()) return;
+        const QVariantMap next = SearchBridgeUtil::filmAfter(films, ask.second);
+        if (!next.isEmpty()) emit nextFilmFound(ask.first, next);
+    });
+    connect(m_discovery, &DiscoveryService::collectionReady, this,
+            [this](int collectionId, const QVariantList &films) {
+        if (collectionId != m_workCollectionId) return;   // stale reply for a former film
+        QVariantList others;
+        for (const QVariant &f : films)
+            if (f.toMap().value(QStringLiteral("tmdbId")).toInt() != m_workTmdbId) others << f;
+        m_workCollection = others;
+        emit workCollectionChanged();
     });
     connect(m_discovery, &DiscoveryService::backdropsReady, this,
             [this](int tmdbId, const QStringList &urls) {

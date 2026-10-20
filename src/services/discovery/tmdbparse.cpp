@@ -217,7 +217,28 @@ QVariantMap workDetails(const QByteArray &detailsJson, int castLimit)
     if (imdb.isEmpty())
         imdb = root.value(QLatin1String("external_ids")).toObject().value(QLatin1String("imdb_id")).toString();
     m.insert(QStringLiteral("imdbId"), imdb);
+    const QJsonObject col = root.value(QLatin1String("belongs_to_collection")).toObject();
+    m.insert(QStringLiteral("collectionId"), col.value(QLatin1String("id")).toInt());
+    m.insert(QStringLiteral("collectionName"), col.value(QLatin1String("name")).toString());
     return m;
+}
+
+QVariantList collectionParts(const QByteArray &json, const QString &posterBase,
+                             const QString &backdropBase)
+{
+    QVariantList items;
+    const QJsonArray parts = QJsonDocument::fromJson(json).object().value(QLatin1String("parts")).toArray();
+    for (const QJsonValue &v : parts) {
+        const QVariantMap m = catalogCard(v.toObject(), false, posterBase, backdropBase, true, true);
+        if (!m.isEmpty()) items.append(m);
+    }
+    std::stable_sort(items.begin(), items.end(), [](const QVariant &a, const QVariant &b) {
+        const int ya = a.toMap().value(QStringLiteral("year")).toInt();
+        const int yb = b.toMap().value(QStringLiteral("year")).toInt();
+        if ((ya > 0) != (yb > 0)) return ya > 0;
+        return ya < yb;
+    });
+    return items;
 }
 
 QVariantList recommendationRows(const QByteArray &json,

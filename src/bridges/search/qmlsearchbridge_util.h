@@ -19,5 +19,8 @@ GameReleasePick::Candidate gameCandFromRow(const QVariantMap &m, bool hasUri);
 // A discovery work (TMDB/IGDB) as a row of the titles grid. Activating the row
 // hands this same map to setWorkContext, so anything the hero reads must ride here.
 QVariantMap titleRowFromWork(const QVariantMap &work);
+// The film after tmdbId among a collection's films (in release order, as
+// TmdbParse::collectionParts gives them); empty when it is the last or absent.
+QVariantMap filmAfter(const QVariantList &films, int tmdbId);
 
 } // namespace SearchBridgeUtil

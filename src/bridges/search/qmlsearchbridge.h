@@ -50,6 +50,10 @@ class QmlSearchBridge : public QObject
     Q_PROPERTY(QStringList workCast READ workCast NOTIFY workDetailsChanged)
     Q_PROPERTY(int workSeasonCount READ workSeasonCount NOTIFY workDetailsChanged)
     Q_PROPERTY(QString workMaker READ workMaker NOTIFY workDetailsChanged)   // a game's developer
+    // The other films of the open film's TMDB collection, in release order:
+    // empty for a film of none, and for anything that is not a film.
+    Q_PROPERTY(QVariantList workCollection READ workCollection NOTIFY workCollectionChanged)
+    Q_PROPERTY(QString workCollectionName READ workCollectionName NOTIFY workCollectionChanged)
     // "movie"|"series"|"game" while a Get & Watch / Install flow is active (else "").
     Q_PROPERTY(QString getFlowType READ getFlowType NOTIFY getFlowChanged)
 public:
@@ -82,6 +86,8 @@ public:
     QStringList workCast() const { return m_workCast; }
     int workSeasonCount() const { return m_workSeasonCount; }
     QString workMaker() const { return m_workMaker; }
+    QVariantList workCollection() const { return m_workCollection; }
+    QString workCollectionName() const { return m_workCollectionName; }
     QString getFlowType() const { return m_gwActive ? m_gwType : QString(); }
     Q_INVOKABLE void fetchWorkStills();   // lazy TMDB backdrops, logo and details for the picked title
 
@@ -101,6 +107,9 @@ public:
     // torrent: answered by nextEpisodeFound with a release from the stream
     // addons. playFoundEpisode adds it and watches it like a pick on the page.
     Q_INVOKABLE void findNextEpisode(const QString &infoHash, int fileIndex);
+    // The film after tmdbId in its TMDB collection, for a player showing it.
+    // Answers with nextFilmFound when there is one (released or not).
+    Q_INVOKABLE void findNextFilm(const QString &infoHash, int collectionId, int tmdbId);
     Q_INVOKABLE void playFoundEpisode(const QVariantMap &next);
     Q_INVOKABLE void back();                       // streams → catalog
     // A title browse already knows (a tile, the billboard): straight to its releases.
@@ -160,6 +169,7 @@ public:
 
 signals:
     void nextEpisodeFound(const QString &infoHash, int fileIndex, const QVariantMap &next);
+    void nextFilmFound(const QString &infoHash, const QVariantMap &film);
     void sourcesChanged();
     void resultsChanged();
     void modeChanged();
@@ -169,6 +179,7 @@ signals:
     void workStillsChanged();
     void workLogoChanged();
     void workDetailsChanged();
+    void workCollectionChanged();
     void gameSourcesChanged();
     void coverReady(const QString &infoHash, const QString &posterPath);
     void addedTorrent(const QString &infoHash);   // a magnet was added from Search
@@ -239,6 +250,10 @@ private:
     QStringList m_workCast;
     int m_workSeasonCount = 0;
     QString m_workMaker;
+    QHash<int, QPair<QString, int>> m_nextFilmAsks;   // collectionId -> (player's hash, its film's tmdbId)
+    QVariantList m_workCollection;
+    QString m_workCollectionName;
+    int m_workCollectionId = 0;   // the one asked for, so a late reply for a former film is dropped
     bool m_workStillsRequested = false;
 
     QVariantList m_episodeCache;      // series episode rows (videoId per row) for mode "episodes"

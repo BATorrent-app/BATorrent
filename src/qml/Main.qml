@@ -960,6 +960,7 @@ Window {
                     Layout.fillWidth: true; Layout.fillHeight: true
                     onFreeSpaceRequested: function (bytes) { makeRoomPanel.targetBytes = bytes; makeRoomPanel.open() }
                     onBackTo: function (page) { win.currentPage = page }
+                    onPageWanted: { win.currentPage = 1; win.show(); win.raise(); win.requestActivate() }
                     onAddMagnetRequested: addDlg.open()
                 }
                 // ----- page 2: HUB -----

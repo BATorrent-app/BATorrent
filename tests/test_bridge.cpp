@@ -20,6 +20,8 @@
 #include <QMetaType>
 #include <QSignalSpy>
 #include <QRegularExpression>
+#include <QJsonDocument>
+#include <QJsonObject>
 
 #include <libtorrent/file_storage.hpp>
 #include <libtorrent/create_torrent.hpp>
@@ -1175,4 +1177,54 @@ TEST_CASE("Session bridge: Copy gives a direct download's address and names it",
     REQUIRE(lines.size() == 2);
     CHECK(lines.at(0).startsWith(QLatin1String("magnet:?")));
     CHECK(lines.at(1) == server.url().toString());
+}
+
+// After a film, the player offers the next one of its TMDB collection: the
+// library's copy when there is one, else what TMDB says comes next.
+TEST_CASE("Search util: filmAfter picks the next film of a collection", "[bridge][search][collection]")
+{
+    const QVariantList films = { QVariantMap{{"tmdbId", 671}, {"title", "Stone"}},
+                                 QVariantMap{{"tmdbId", 672}, {"title", "Chamber"}},
+                                 QVariantMap{{"tmdbId", 673}, {"title", "Azkaban"}} };
+    CHECK(SearchBridgeUtil::filmAfter(films, 671).value("tmdbId").toInt() == 672);
+    CHECK(SearchBridgeUtil::filmAfter(films, 672).value("title").toString() == QStringLiteral("Azkaban"));
+    CHECK(SearchBridgeUtil::filmAfter(films, 673).isEmpty());   // the last
+    CHECK(SearchBridgeUtil::filmAfter(films, 9).isEmpty());     // not in it
+}
+
+TEST_CASE("Session bridge: nextFilmInLibrary finds the library's next film of the collection", "[bridge][session][collection]")
+{
+    app();
+    QTemporaryDir tmp;
+    REQUIRE(tmp.isValid());
+    QDir().mkpath(tmp.path() + "/dl");
+    SessionManager session;
+    while (session.torrentCount() > 0) session.removeTorrent(0, false, true);
+    for (const QString &tag : {QStringLiteral("hp1"), QStringLiteral("hp3"), QStringLiteral("hp2")})
+        session.addTorrent(makeFixtureTorrent(tmp.path(), tag), tmp.path() + "/dl");
+    REQUIRE(pumpUntil([&] { return session.torrentCount() == 3; }));
+
+    // what the resolver would have cached for them: three films of one collection
+    const QString metaDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/metadata";
+    QDir().mkpath(metaDir);
+    const int ids[] = {671, 673, 672};
+    const int years[] = {2001, 2004, 2002};
+    for (int i = 0; i < 3; ++i) {
+        QFile f(metaDir + "/" + session.torrentHashAt(i).toLower() + ".json");
+        REQUIRE(f.open(QIODevice::WriteOnly));
+        f.write(QJsonDocument(QJsonObject{{"title", QStringLiteral("HP %1").arg(i)}, {"year", years[i]},
+                                          {"tmdbId", ids[i]}, {"collectionId", 1241},
+                                          {"collectionName", "Harry Potter Collection"},
+                                          {"collectionChecked", true}, {"contentType", "movie"}}).toJson());
+    }
+    MetadataResolver resolver;
+    QmlSessionBridge bridge(&session, &resolver);
+
+    const QVariantMap afterFirst = bridge.nextFilmInLibrary(session.torrentHashAt(0));
+    CHECK(afterFirst.value("infoHash").toString() == session.torrentHashAt(2));   // 2002, not 2004
+    CHECK(afterFirst.value("year").toInt() == 2002);
+    const QVariantMap afterLast = bridge.nextFilmInLibrary(session.torrentHashAt(1));
+    CHECK(afterLast.value("infoHash").toString().isEmpty());   // nothing later in the library
+    CHECK(afterLast.value("collectionId").toInt() == 1241);    // so TMDB is asked
+    CHECK(afterLast.value("tmdbId").toInt() == 673);
 }

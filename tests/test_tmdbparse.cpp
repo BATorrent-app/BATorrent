@@ -231,3 +231,27 @@ TEST_CASE("workDetails reads a season payload's own cast", "[tmdbparse]") {
     REQUIRE(d.value("cast").toStringList()
             == QStringList{ "Matthew McConaughey", "Woody Harrelson" });
 }
+
+// A film's page lists the rest of its TMDB collection, so the details must say
+// which one, and the collection's films come back in release order.
+TEST_CASE("workDetails names a film's collection; collectionParts orders its films", "[tmdbparse][collection]") {
+    const QByteArray details = R"({"id":671,"title":"Harry Potter and the Philosopher's Stone",
+        "belongs_to_collection":{"id":1241,"name":"Harry Potter Collection","poster_path":"/c.jpg"}})";
+    const QVariantMap d = TmdbParse::workDetails(details);
+    CHECK(d.value("collectionId").toInt() == 1241);
+    CHECK(d.value("collectionName").toString() == QStringLiteral("Harry Potter Collection"));
+    CHECK(TmdbParse::workDetails(R"({"id":550,"belongs_to_collection":null})").value("collectionId").toInt() == 0);
+
+    const QByteArray col = R"({"id":1241,"name":"Harry Potter Collection","parts":[
+        {"id":672,"title":"Chamber of Secrets","release_date":"2002-11-13","poster_path":"/b.jpg","backdrop_path":"/bb.jpg"},
+        {"id":999,"title":"Not Out Yet","release_date":"","poster_path":"/z.jpg"},
+        {"id":671,"title":"Philosopher's Stone","release_date":"2001-11-16","poster_path":"/a.jpg"},
+        {"id":998,"title":"No Poster","release_date":"2003-01-01"}]})";
+    const QVariantList parts = TmdbParse::collectionParts(col, "P", "B");
+    REQUIRE(parts.size() == 3);   // the one without a poster is no card
+    CHECK(parts[0].toMap().value("tmdbId").toInt() == 671);
+    CHECK(parts[1].toMap().value("tmdbId").toInt() == 672);
+    CHECK(parts[1].toMap().value("backdrop").toString() == QStringLiteral("B/bb.jpg"));
+    CHECK(parts[1].toMap().value("type").toString() == QStringLiteral("movie"));
+    CHECK(parts[2].toMap().value("tmdbId").toInt() == 999);   // undated last
+}

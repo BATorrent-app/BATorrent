@@ -23,12 +23,30 @@ Item {
     property string nextTitle: ""
     property string nextSubtitle: ""
     property var formatHelper
+    // false: the card offers the next item but never moves on by itself (a
+    // film the library lacks opens its page in Find, on a click)
+    property bool canAutoplay: true
+    property string actionLabel: ""     // the button; "Watch now" when empty
+    property var chapters: []           // the file's, with kind "credits" where known
+    // When the end credits begin, if the file says (its chapters, or AniSkip):
+    // the card comes up there rather than in the last seconds. Only a credits
+    // chapter in the second half counts; an early one is an opening's.
+    readonly property real creditsStartMs: {
+        var d = mediaPlayer ? mediaPlayer.duration : 0
+        if (d <= 0) return -1
+        for (var i = 0; i < chapters.length; i++) {
+            var c = chapters[i]
+            if (c.kind === "credits" && c.startMs > d / 2) return c.startMs
+        }
+        return -1
+    }
 
     property bool endCardDismissed: false
     property int countdownSec: 0
     readonly property real endCardLeadMs: 28000
     readonly property bool inLeadWindow: mediaPlayer && mediaPlayer.duration > 0 && mediaPlayer.position > 0
-        && (mediaPlayer.duration - mediaPlayer.position) <= endCardLeadMs
+        && ((mediaPlayer.duration - mediaPlayer.position) <= endCardLeadMs
+            || (creditsStartMs > 0 && mediaPlayer.position >= creditsStartMs))
     readonly property bool showEndCard: root.hasNext && !root.endCardDismissed
         && root.autoplayNext && (root.inLeadWindow || root.countdownSec > 0)
 
@@ -41,7 +59,7 @@ Item {
 
     function maybePlayNext() {
         if (typeof session === "undefined" || !root.hasNext) return
-        if (!root.autoplayNext || root.endCardDismissed) return
+        if (!root.autoplayNext || root.endCardDismissed || !root.canAutoplay) return
         root.countdownSec = 8
         countdown.restart()
     }
@@ -135,7 +153,7 @@ Item {
                 }
                 Text {
                     id: playNowTxt; anchors.centerIn: parent
-                    text: (i18n.language, i18n.t("player_watch_now"))
+                    text: (i18n.language, root.actionLabel.length > 0 ? root.actionLabel : i18n.t("player_watch_now"))
                     color: "#ffffff"; font.pixelSize: 13; font.weight: Font.DemiBold; font.family: Theme.fontSans
                 }
                 MouseArea { id: pnMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.playNextNow() }

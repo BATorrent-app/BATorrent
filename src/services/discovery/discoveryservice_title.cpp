@@ -117,6 +117,19 @@ void DiscoveryService::fetchWorkDetails(int tmdbId, const QString &type)
     });
 }
 
+void DiscoveryService::fetchCollection(int collectionId)
+{
+    if (collectionId <= 0 || tmdbApiKey().isEmpty()) return;
+    QNetworkReply *reply = tmdbGet(QStringLiteral("/collection/%1").arg(collectionId),
+                                   { { QStringLiteral("language"), tmdbLang() } });
+    connect(reply, &QNetworkReply::finished, this, [this, reply, collectionId]() {
+        reply->deleteLater();
+        if (reply->error() != QNetworkReply::NoError) return;
+        emit collectionReady(collectionId,
+                             TmdbParse::collectionParts(reply->readAll(), TmdbPosterBase, TmdbBackdrop));
+    });
+}
+
 void DiscoveryService::fetchLogo(int tmdbId, const QString &type)
 {
     if (tmdbId <= 0 || (type != QLatin1String("movie") && type != QLatin1String("series"))) return;

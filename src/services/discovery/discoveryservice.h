@@ -72,6 +72,9 @@ public:
     Q_INVOKABLE void fetchBackdrops(int tmdbId, const QString &type);
     // Genres, billed cast and season count for a picked title. Emits workDetailsReady.
     Q_INVOKABLE void fetchWorkDetails(int tmdbId, const QString &type);
+    // A TMDB collection's films ("The Lord of the Rings Collection"), in
+    // release order. Emits collectionReady.
+    Q_INVOKABLE void fetchCollection(int collectionId);
     // The title's lettering for a browse tile. Cached per session, one request
     // per title however many tiles ask. Emits titleLogoReady ("" = none), and
     // titleBackdropReady with the first textless backdrop from the same reply.
@@ -106,7 +109,8 @@ signals:
     void episodesReady(int tmdbId, int season, const QVariantList &episodes);   // [{episode,name,air_date}]
     void backdropsReady(int tmdbId, const QStringList &urls);
     void logoReady(int tmdbId, const QString &url);   // the title's own lettering, same reply
-    void workDetailsReady(int tmdbId, const QVariantMap &details);   // {genres, cast, seasons, imdbId}
+    void workDetailsReady(int tmdbId, const QVariantMap &details);
+    void collectionReady(int collectionId, const QVariantList &films);   // {genres, cast, seasons, imdbId}
     void seasonCastReady(int tmdbId, int season, const QStringList &cast);
     void titleLogoReady(int tmdbId, const QString &type, const QString &url);
     void titleBackdropReady(int tmdbId, const QString &type, const QString &url);

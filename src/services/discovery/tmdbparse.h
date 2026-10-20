@@ -35,7 +35,8 @@ QString youtubeTrailerKey(const QByteArray &videosJson);
 // on the floor.
 QVariantList episodeRows(const QByteArray &seasonJson, const QString &stillBase = QString());
 
-// /{movie|tv}/{id}?append_to_response=credits → {genres, cast, seasons}.
+// /{movie|tv}/{id}?append_to_response=credits → {genres, cast, seasons,
+// imdbId, collectionId, collectionName}; the collection only for a film of one.
 // Cast is billing order, capped: the hero names three people, not thirty.
 QVariantMap workDetails(const QByteArray &detailsJson, int castLimit = 3);
 
@@ -54,5 +55,10 @@ QVariantList shelfRows(const QByteArray &json,
 // /search/multi → movie/tv works including originalTitle (for tracker queries).
 QVariantList multiSearchRows(const QByteArray &json, const QString &posterBase,
                              const QString &backdropBase = QString());
+
+// /collection/{id} → its films as poster cards (with backdrop and tmdbId), in
+// release order; one not out yet, with no date, goes last.
+QVariantList collectionParts(const QByteArray &json, const QString &posterBase,
+                             const QString &backdropBase);
 
 } // namespace TmdbParse

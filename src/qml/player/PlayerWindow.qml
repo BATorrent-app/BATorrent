@@ -283,12 +283,27 @@ Window {
     property var nextProvider: null
     property var externalNext: null
     readonly property bool hasNext: nextIdx >= 0 || externalNext !== null
+    // A film the library does not have is offered, never opened on its own.
+    readonly property bool nextAutoplays: !(externalNext && externalNext.film && !externalNext.owned)
+    function nameNextFilm() {
+        var f = win.externalNext.film
+        win.nextTitle = f.title || ""
+        win.nextSubtitle = ""
+        win.nextPoster = f.poster || ""
+        endCard.nextMeta = f.year ? String(f.year) : ""
+    }
     property bool autoplayNext: (typeof settings === "undefined") || settings.getBool("autoplayNext", true)
     property var chapters: []
     property bool autoSkip: false
     Connections {
         target: typeof search !== "undefined" ? search : null
         ignoreUnknownSignals: true
+        // the film after this one in its TMDB collection, which the library lacks
+        function onNextFilmFound(hash, film) {
+            if (hash !== win.infoHash || win.nextIdx >= 0 || win.externalNext) return
+            win.externalNext = { film: film, owned: false }
+            win.nameNextFilm()
+        }
         function onNextEpisodeFound(hash, fileIdx, next) {
             if (hash !== win.infoHash || fileIdx !== win.fileIndex || win.nextIdx >= 0 || win.externalNext) return
             win.externalNext = next
@@ -393,8 +408,18 @@ Window {
         win.nextIdx = (typeof session !== "undefined") ? session.nextEpisode(hash, fileIdx) : -1
         win.externalNext = (win.nextIdx < 0 && win.nextProvider)
                            ? win.nextProvider.nextEpisodeFor(hash, fileIdx) : null
+        // a film: the next one of its TMDB collection, the library's copy first
+        var filmAsked = false
+        if (win.nextIdx < 0 && !win.externalNext && typeof session !== "undefined") {
+            var nf = session.nextFilmInLibrary(hash)
+            if ((nf.infoHash || "").length > 0) win.externalNext = { film: nf, owned: true }
+            else if ((nf.collectionId || 0) > 0 && typeof search !== "undefined") {
+                search.findNextFilm(hash, nf.collectionId, nf.tmdbId)
+                filmAsked = true
+            }
+        }
         // not in this torrent and no series page to ask: the stream addons
-        if (win.nextIdx < 0 && !win.externalNext && typeof search !== "undefined")
+        if (win.nextIdx < 0 && !win.externalNext && !filmAsked && typeof search !== "undefined")
             search.findNextEpisode(hash, fileIdx)
         endCard.reset()
         if (win.nextIdx >= 0 && typeof session !== "undefined") {
@@ -403,6 +428,8 @@ Window {
             win.nextSubtitle = np.subtitle || ""
             win.nextPoster = session.posterForHash(hash)
         } else { win.nextTitle = ""; win.nextSubtitle = ""; win.nextPoster = "" }
+        endCard.nextMeta = ""
+        if (win.externalNext && win.externalNext.film) win.nameNextFilm()
         win.tracksRestored = false
         win.autoSubPending = false
         win.loadSubStyle()
@@ -427,6 +454,15 @@ Window {
         var next = win.externalNext
         if (!next) return
         resume.save()
+        // the next film of the collection: played when the library has it, else
+        // its page in Find, to pick a release
+        if (next.film) {
+            var film = next.film
+            var provider0 = win.nextProvider
+            if (next.owned && typeof session !== "undefined") { win.close(); session.playByHash(film.infoHash); return }
+            if (provider0) { win.close(); provider0.showFilm(film) }
+            return
+        }
         // a release the addons found: added and watched like a pick on the page
         if (next.magnet && typeof search !== "undefined") {
             win.close()
@@ -463,7 +499,7 @@ Window {
             if (st === MediaPlayer.LoadedMedia || st === MediaPlayer.BufferedMedia) resume.tryApply()
             else if (st === MediaPlayer.EndOfMedia) {
                 resume.save()
-                if (win.nextIdx < 0 && win.externalNext && win.autoplayNext) win.playNext()
+                if (win.nextIdx < 0 && win.externalNext && win.autoplayNext && win.nextAutoplays) win.playNext()
                 else endCard.maybePlayNext()
             }
         }
@@ -820,6 +856,9 @@ Window {
         nextPoster: win.nextPoster
         nextTitle: win.nextTitle
         nextSubtitle: win.nextSubtitle
+        canAutoplay: win.nextAutoplays
+        actionLabel: win.nextAutoplays ? "" : (i18n.language, i18n.t("player_find_next_film"))
+        chapters: win.chapters
         formatHelper: playerFmt
         onPlayNextRequested: win.playNext()
     }

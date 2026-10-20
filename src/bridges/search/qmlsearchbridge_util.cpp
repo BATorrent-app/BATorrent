@@ -83,4 +83,12 @@ QVariantMap titleRowFromWork(const QVariantMap &w)
     return row;
 }
 
+QVariantMap filmAfter(const QVariantList &films, int tmdbId)
+{
+    for (int i = 0; i + 1 < films.size(); ++i)
+        if (films.at(i).toMap().value(QStringLiteral("tmdbId")).toInt() == tmdbId)
+            return films.at(i + 1).toMap();
+    return {};
+}
+
 } // namespace SearchBridgeUtil
