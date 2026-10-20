@@ -188,10 +188,13 @@ void QmlSessionBridge::fetchEngineFlags(const QString &hash)
     // A game that bundles cutscene/intro videos must not offer Play: Install wins.
     f.playable = m_session->torrentHasVideo(row) && !isGameTorrent(row);
     f.sequential = m_session->isSequentialDownload(row);
+    f.forceStart = m_session->isForceStart(row);
+    f.superSeeding = m_session->isSuperSeeding(row);
     f.at = QDateTime::currentMSecsSinceEpoch();
     const auto old = m_engineFlags.constFind(hash);
     const bool changed = old == m_engineFlags.constEnd()
-                         || old->playable != f.playable || old->sequential != f.sequential;
+                         || old->playable != f.playable || old->sequential != f.sequential
+                         || old->forceStart != f.forceStart || old->superSeeding != f.superSeeding;
     m_engineFlags.insert(hash, f);
     if (changed) emit selectionChanged();
 }
@@ -204,12 +207,14 @@ void QmlSessionBridge::extractSelected(const QString &password)
 
 bool QmlSessionBridge::selectedForceStart() const
 {
-    return hasSelection() && m_session->isForceStart(m_selectedIndex);
+    const EngineFlags *f = selectedEngineFlags();
+    return f && f->forceStart;
 }
 
 bool QmlSessionBridge::selectedSuperSeeding() const
 {
-    return hasSelection() && m_session->isSuperSeeding(m_selectedIndex);
+    const EngineFlags *f = selectedEngineFlags();
+    return f && f->superSeeding;
 }
 
 bool QmlSessionBridge::selectedCompleted() const
@@ -224,13 +229,21 @@ bool QmlSessionBridge::selectedPaused() const
 
 void QmlSessionBridge::setSelectedForceStart(bool on)
 {
-    if (hasSelection()) m_session->setForceStart(m_selectedIndex, on);
+    if (hasSelection()) {
+        m_session->setForceStart(m_selectedIndex, on);
+        auto it = m_engineFlags.find(m_session->torrentHashAt(m_selectedIndex));
+        if (it != m_engineFlags.end()) it->forceStart = on;
+    }
     emit selectionChanged(); emit selectionListsChanged();
 }
 
 void QmlSessionBridge::setSelectedSuperSeeding(bool on)
 {
-    if (hasSelection()) m_session->setSuperSeeding(m_selectedIndex, on);
+    if (hasSelection()) {
+        m_session->setSuperSeeding(m_selectedIndex, on);
+        auto it = m_engineFlags.find(m_session->torrentHashAt(m_selectedIndex));
+        if (it != m_engineFlags.end()) it->superSeeding = on;
+    }
     emit selectionChanged(); emit selectionListsChanged();
 }
 

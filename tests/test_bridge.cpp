@@ -1137,6 +1137,10 @@ TEST_CASE("Session bridge: selectedHasVideo is asked of the engine outside the g
     CHECK_FALSE(bridge.selectedSequential());
     bridge.setSelectedSequential(true);
     CHECK(bridge.selectedSequential());       // the setter keeps the answer current
+    // the menu's Force start tick reads the same way
+    CHECK_FALSE(bridge.selectedForceStart());
+    bridge.setSelectedForceStart(true);
+    CHECK(bridge.selectedForceStart());
 }
 
 // Copy hands out what gets the item again: a magnet for a torrent, the address
