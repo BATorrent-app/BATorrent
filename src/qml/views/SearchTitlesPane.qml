@@ -46,6 +46,9 @@ Item {
         var i = sv.results.indexOf(it)
         if (i >= 0) sv.api.activateResult(i)
     }
+    // A tile hands back a copy of its item (a Repeater's modelData is one), and
+    // a copy is never found by identity: tiles go by their place in the list.
+    function activateAt(k) { activate(titles[k]) }
     function savedOf(it) {
         return typeof session !== "undefined"
                && (session.watchlist, session.inWatchlist(it.name || "", it.type || ""))
@@ -167,12 +170,13 @@ Item {
                         model: pane.others.slice(0, grid.cols)
                         TitleTile {
                             required property var modelData
+                            required property int index
                             width: grid.cellW
                             item: modelData
                             saved: pane.savedOf(modelData)
                             owned: pane.sv.owned ? pane.sv.owned.stateOf(modelData) : null
                             onWatchlistToggle: pane.toggleSaved(modelData)
-                            onActivated: pane.activate(modelData)
+                            onActivated: pane.activateAt(index + (pane.showBest ? 1 : 0))
                         }
                     }
                 }
