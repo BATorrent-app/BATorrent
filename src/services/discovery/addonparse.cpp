@@ -20,7 +20,9 @@ bool isValidInfoHash(const QString &h)
 {
     static const QRegularExpression re(
         QStringLiteral("^([0-9A-Fa-f]{40}|[0-9A-Fa-f]{64}|[A-Za-z2-7]{32})$"));
-    return re.match(h).hasMatch();
+    // all zeros is how apibay fills its "No results returned" row
+    static const QRegularExpression zeros(QStringLiteral("^0+$"));
+    return re.match(h).hasMatch() && !zeros.match(h).hasMatch();
 }
 
 QString normalizeAddonBaseUrl(QString url)
@@ -125,7 +127,7 @@ QList<TorrentSearchResult> parseProviderResponse(const SearchProvider &p, const 
         QJsonObject obj = val.toObject();
         QString name = decodeHtmlEntities(obj.value(p.namePath).toString());
         QString infoHash = obj.value(p.hashPath).toString();
-        if (infoHash.isEmpty() || infoHash == QLatin1String("0")) continue;
+        if (!isValidInfoHash(infoHash)) continue;
 
         TorrentSearchResult r;
         r.name = name;

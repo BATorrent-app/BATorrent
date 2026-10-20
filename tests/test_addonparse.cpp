@@ -19,6 +19,9 @@ TEST_CASE("isValidInfoHash accepts v1 hex, v2 hex, base32", "[addonparse]") {
     REQUIRE_FALSE(AddonParse::isValidInfoHash(
         QStringLiteral("0123456789abcdef0123456789abcdef01234567&ws=evil")));
     REQUIRE_FALSE(AddonParse::isValidInfoHash(QStringLiteral("not-a-hash")));
+    // apibay's "nothing found" row carries a hash of zeros: no torrent has it
+    REQUIRE_FALSE(AddonParse::isValidInfoHash(
+        QStringLiteral("0000000000000000000000000000000000000000")));
 }
 
 TEST_CASE("normalizeAddonBaseUrl strips slash and manifest.json", "[addonparse]") {
@@ -147,6 +150,28 @@ TEST_CASE("parseApibayArray rejects invalid hashes", "[addonparse]") {
     REQUIRE(rows.size() == 1);
     REQUIRE(rows.at(0).name == QLatin1String("ok"));
     REQUIRE(AddonParse::parseApibayArray(QByteArrayLiteral("{}")).isEmpty());
+}
+
+TEST_CASE("The Pirate Bay's empty answer is not a release", "[addonparse]") {
+    // apibay answers a search with no hits with one made-up row. Searching a
+    // film's translated title often finds nothing there, and that row showed
+    // up in Find as a release called "No results returned".
+    const QByteArray json = QByteArrayLiteral(R"([
+      { "id": "0", "name": "No results returned",
+        "info_hash": "0000000000000000000000000000000000000000",
+        "leechers": "0", "seeders": "0", "num_files": "0", "size": "0",
+        "username": "", "added": "0", "status": "member", "category": "0", "imdb": "" }
+    ])");
+    REQUIRE(AddonParse::parseApibayArray(json).isEmpty());
+
+    SearchProvider p;     // apibay as the default provider list sets it up
+    p.name = QStringLiteral("The Pirate Bay (apibay)");
+    p.namePath = QStringLiteral("name");
+    p.hashPath = QStringLiteral("info_hash");
+    p.sizePath = QStringLiteral("size");
+    p.seedersPath = QStringLiteral("seeders");
+    p.leechersPath = QStringLiteral("leechers");
+    REQUIRE(AddonParse::parseProviderResponse(p, json).isEmpty());
 }
 
 TEST_CASE("parseManifestJson maps types and resource objects", "[addonparse]") {
