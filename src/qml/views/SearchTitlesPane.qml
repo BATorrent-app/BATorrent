@@ -41,14 +41,24 @@ Item {
     }
 
     // the type chips filter the list: open by the row's place in the full results
+    // Found by what it is, never by identity: sv.results is the engine's list
+    // turned into JS on every read, so no item read earlier is ever === one
+    // read now, and an indexOf() lookup left every click doing nothing.
+    function resultIndex(it) {
+        var r = sv.results
+        for (var i = 0; i < r.length; i++) {
+            var w = r[i]
+            if ((w.id || "") === (it.id || "") && (w.name || "") === (it.name || "")
+                && (w.type || "") === (it.type || "") && String(w.year || "") === String(it.year || ""))
+                return i
+        }
+        return -1
+    }
     function activate(it) {
         if (!sv.api || !it) return
-        var i = sv.results.indexOf(it)
+        var i = resultIndex(it)
         if (i >= 0) sv.api.activateResult(i)
     }
-    // A tile hands back a copy of its item (a Repeater's modelData is one), and
-    // a copy is never found by identity: tiles go by their place in the list.
-    function activateAt(k) { activate(titles[k]) }
     function savedOf(it) {
         return typeof session !== "undefined"
                && (session.watchlist, session.inWatchlist(it.name || "", it.type || ""))
@@ -170,13 +180,12 @@ Item {
                         model: pane.others.slice(0, grid.cols)
                         TitleTile {
                             required property var modelData
-                            required property int index
                             width: grid.cellW
                             item: modelData
                             saved: pane.savedOf(modelData)
                             owned: pane.sv.owned ? pane.sv.owned.stateOf(modelData) : null
                             onWatchlistToggle: pane.toggleSaved(modelData)
-                            onActivated: pane.activateAt(index + (pane.showBest ? 1 : 0))
+                            onActivated: pane.activate(modelData)
                         }
                     }
                 }

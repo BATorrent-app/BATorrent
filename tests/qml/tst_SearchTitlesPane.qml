@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
-// Find's titles: the best match as a banner, the next ones as tiles. A click on
-// a tile did nothing: the tile handed back a copy of its item, and the pane
-// looked that copy up in the results by identity, which never matched.
+// Find's titles: the best match as a banner, the next ones as tiles. A click
+// did nothing: the pane looked the clicked item up in the results by identity,
+// and in the app the results are the engine's list turned into JS anew on every
+// read, so the item clicked is never the same object. The stub's list here is a
+// fixed array, so the cases below click with copies, as the app does.
 
 import QtQuick
 import QtTest
@@ -63,6 +65,20 @@ Item {
                 tiles(c, out)
             }
             return out
+        }
+
+        function copy(o) { return JSON.parse(JSON.stringify(o)) }
+
+        function test_aCopyOfAnItemStillOpensIt() {
+            apiStub.activated = -1
+            var pane = createTemporaryObject(paneComp, root)
+            pane.activate(copy(svStub.results[2]))
+            compare(apiStub.activated, 2)
+            pane.activate(copy(svStub.results[0]))   // the banner's
+            compare(apiStub.activated, 0)
+            apiStub.activated = -1
+            pane.activate({ name: "Not in the list", type: "movie", year: "1999" })
+            compare(apiStub.activated, -1)
         }
 
         function test_aTileOpensItsTitle() {
