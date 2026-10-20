@@ -119,6 +119,7 @@ ColumnLayout {
                 case "debrid": return fieldCtrls.debrid
                 case "debridtoken": return fieldCtrls.debridtoken
                 case "button": return fieldCtrls.button
+                case "updates": return fieldCtrls.updates
                 case "iface": return fieldCtrls.iface
                 case "userimage": return themeCtrls.userimage
                 }

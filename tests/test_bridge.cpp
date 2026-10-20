@@ -38,6 +38,7 @@
 #include "bridges/search/qmlsearchbridge_util.h"
 #include "nointernet.h"
 #include "httptestserver.h"
+#include "bridges/qmlupdaterbridge.h"
 #include "services/downloads/httpdownloadmanager.h"
 #include "services/downloads/httpdownload.h"
 #include "services/downloads/httpmergeengine.h"
@@ -1227,4 +1228,44 @@ TEST_CASE("Session bridge: nextFilmInLibrary finds the library's next film of th
     CHECK(afterLast.value("infoHash").toString().isEmpty());   // nothing later in the library
     CHECK(afterLast.value("collectionId").toInt() == 1241);    // so TMDB is asked
     CHECK(afterLast.value("tmdbId").toInt() == 673);
+}
+
+// A tester asked for Settings to say where updates stand: the installed version,
+// whether it is current, what is out, when it was last checked, and why a check
+// failed. The status survives a restart; a failure keeps the last good time.
+TEST_CASE("Updater bridge: the last check's outcome is kept and said", "[bridge][updates]")
+{
+    app();
+    {
+        QSettings s;
+        for (const char *k : {"lastUpdateStatus", "lastUpdateLatest", "lastUpdateFailure", "lastUpdateCheck"})
+            s.remove(QLatin1String(k));
+    }
+    {
+        QmlUpdaterBridge up;
+        CHECK(up.status().isEmpty());
+        CHECK(up.lastChecked() == 0);
+        QSignalSpy changed(&up, &QmlUpdaterBridge::statusChanged);
+
+        up.noteNone();
+        CHECK(up.status() == QStringLiteral("current"));
+        CHECK(up.latestVersion() == QStringLiteral(APP_VERSION));
+        CHECK(up.lastChecked() > 0);
+        CHECK(changed.count() > 0);
+
+        up.noteFound(QStringLiteral("9.9.9"));
+        CHECK(up.status() == QStringLiteral("available"));
+        CHECK(up.latestVersion() == QStringLiteral("9.9.9"));
+
+        const qint64 goodAt = up.lastChecked();
+        QSettings().setValue("lastUpdateCheck", goodAt - 100);   // as if the good one were older
+        up.noteFailed(QStringLiteral("offline"));
+        CHECK(up.status() == QStringLiteral("failed"));
+        CHECK(up.failure() == QStringLiteral("offline"));
+        CHECK(up.latestVersion() == QStringLiteral("9.9.9"));
+        CHECK(up.lastChecked() == goodAt - 100);   // a failure is not a check that answered
+    }
+    QmlUpdaterBridge restarted;   // what Settings shows after a restart
+    CHECK(restarted.status() == QStringLiteral("failed"));
+    CHECK(restarted.failure() == QStringLiteral("offline"));
 }

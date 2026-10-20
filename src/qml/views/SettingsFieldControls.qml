@@ -29,6 +29,7 @@ Item {
     property Component select: cSelect
     property Component segmented: cSegmented
     property Component button: cButton
+    property Component updates: cUpdates
     property Component debrid: cDebridPicker
     property Component debridtoken: cDebridToken
     property Component path: cPath
@@ -172,6 +173,64 @@ Item {
     Component {
         id: cButton
         BtnFlat { text: root.field.btn || ""; lg: true; onClicked: root.sw.runButtonAction(root.field.action) }
+    }
+    // The installed version and where the last check left things, with the one
+    // button that fits: check now, see the update, or try again.
+    Component {
+        id: cUpdates
+        RowLayout {
+            spacing: Theme.sp3
+            readonly property var up: typeof updater !== "undefined" ? updater : null
+            readonly property string st: up ? up.status : ""
+            readonly property string installed: typeof themeBridge !== "undefined" ? themeBridge.appVersion : ""
+            ColumnLayout {
+                spacing: 2
+                Text {
+                    Layout.alignment: Qt.AlignRight
+                    text: {
+                        i18n.language
+                        var s = parent.parent
+                        var head = s.installed
+                        if (s.st === "checking") return head + " · " + i18n.t("upd_checking")
+                        if (s.st === "current") return head + " · " + i18n.t("upd_current")
+                        if (s.st === "available") return head + " · " + i18n.t("upd_available").arg(s.up.latestVersion)
+                        if (s.st === "failed") return head + " · " + i18n.t("upd_check_failed")
+                        return head
+                    }
+                    color: parent.parent.st === "available" ? Theme.accentText
+                         : parent.parent.st === "failed" ? Theme.warn : Theme.t1
+                    font.pixelSize: 14; font.family: Theme.fontSans; font.features: Theme.tnum
+                }
+                Text {
+                    Layout.alignment: Qt.AlignRight
+                    Layout.maximumWidth: 320
+                    horizontalAlignment: Text.AlignRight
+                    elide: Text.ElideRight
+                    readonly property var s: parent.parent
+                    text: {
+                        i18n.language
+                        if (!s.up) return ""
+                        if (s.st === "failed" && s.up.failure.length > 0) return s.up.failure
+                        var at = s.up.lastCheckedAt
+                        if (at <= 0) return i18n.t("upd_never")
+                        var d = new Date(at * 1000)
+                        return i18n.t("upd_last_checked").arg(i18n.date(at) + " " + Qt.formatTime(d, "hh:mm"))
+                    }
+                    color: Theme.t3
+                    font.pixelSize: 12; font.family: Theme.fontSans; font.features: Theme.tnum
+                }
+            }
+            BtnFlat {
+                lg: true
+                enabled: parent.up !== null && parent.st !== "checking"
+                primary: parent.st === "available"
+                text: (i18n.language, parent.st === "available" ? i18n.t("upd_see")
+                                      : parent.st === "failed" ? i18n.t("player_try_again")
+                                      : i18n.t("upd_check_now"))
+                // seeing a found update opens its window; a plain check stays here
+                onClicked: parent.up.check(parent.st !== "available")
+            }
+        }
     }
     Component {
         id: cDebridPicker
