@@ -15,6 +15,8 @@
 #include <QLocale>
 #include <QMediaPlayer>
 #include <QProcess>
+#include <QProcessEnvironment>
+#include <QTimer>
 #include <QUuid>
 #include <QVideoSink>
 #include <algorithm>
@@ -68,6 +70,9 @@ void IsolatedMediaPlayer::setSource(const QUrl &source)
     if (source == m_source) return;
     m_source = source;
     emit sourceChanged();
+    // another file: the hardware decoder gets its chance again
+    m_softwareDecode = false;
+    if (m_noPicture) { m_noPicture = false; emit noPictureChanged(); }
     if (source.isEmpty()) {
         teardown();
         applyState(media::State{});
@@ -167,6 +172,7 @@ QString IsolatedMediaPlayer::listenWithoutChild()
 {
     if (!m_channel && !openChannel({})) return {};
     m_childPid = QCoreApplication::applicationPid();
+    m_noChild = true;
     return m_serverName;
 }
 
@@ -194,6 +200,13 @@ bool IsolatedMediaPlayer::ensureChild()
     }
     m_proc = new QProcess(this);
     m_proc->setProcessChannelMode(QProcess::ForwardedChannels);
+    if (m_softwareDecode) {
+        // Qt's ffmpeg backend reads its hardware decoders from here; a name it
+        // does not know leaves none, and every frame is decoded in software.
+        QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+        env.insert(QStringLiteral("QT_FFMPEG_DECODING_HW_DEVICE_TYPES"), QStringLiteral("none"));
+        m_proc->setProcessEnvironment(env);
+    }
 #ifdef Q_OS_WIN
     if (m_launch) m_proc->setCreateProcessArgumentsModifier(m_launch->modifier());
 #endif
@@ -235,6 +248,9 @@ void IsolatedMediaPlayer::startFeed()
     m_opened = false;
     if (!m_subHtml.isEmpty()) { m_subHtml.clear(); emit subtitleChanged(); }
     logPlaybackSummary();
+    m_soundFrom = -1;
+    m_soundClock.invalidate();
+    m_loggedBadFrame = false;
     m_openClock.start();
     m_feed = new MediaFeed(m_source, this);
     connect(m_feed, &MediaFeed::ready, this, [this, gen](qint64 size) {
@@ -342,6 +358,7 @@ void IsolatedMediaPlayer::applyState(const media::State &in)
     if (old.seekable != s.seekable) emit seekableChanged();
     if (old.hasVideo != s.hasVideo) emit hasVideoChanged();
     if (!qFuzzyCompare(old.playbackRate, s.playbackRate)) emit playbackRateChanged();
+    if (old.position != s.position) checkPicture();
 
     if (m_sawFrame && old.mediaStatus != s.mediaStatus) {
         const bool starved = s.mediaStatus == QMediaPlayer::StalledMedia
@@ -400,12 +417,64 @@ void IsolatedMediaPlayer::showFrame(qint32 generation, const media::FrameHeader 
         frame = media::unpack(hdr, base, m_slotBytes);
     }
     send(QStringLiteral("release"), media::encode(generation, hdr.slot));
+    if (usable && !frame.isValid() && !m_loggedBadFrame) {
+        // the reason a picture can go missing: say it once per file
+        m_loggedBadFrame = true;
+        qWarning().noquote() << "[media] a frame could not be shown: format" << hdr.pixelFormat
+                             << hdr.width << "x" << hdr.height << "planes" << hdr.planeCount;
+    }
     if (frame.isValid() && !m_sawFrame) {
         m_sawFrame = true;
         qInfo().noquote() << "[play] first frame after" << m_openClock.elapsed() << "ms," << hdr.width << "x" << hdr.height;
     }
     if (frame.isValid())
         if (QVideoSink *s = sink()) s->setVideoFrame(frame);
+}
+
+// Sound moving on with no picture for a few seconds, in a file that has video:
+// first a decoder that decodes in software, from where it was; if that shows
+// nothing either, noPicture, and the player offers another way to watch.
+void IsolatedMediaPlayer::checkPicture()
+{
+    if (m_sawFrame || m_noPicture || !m_state.hasVideo
+        || m_state.playbackState != QMediaPlayer::PlayingState) {
+        m_soundFrom = -1;
+        m_soundClock.invalidate();
+        return;
+    }
+    if (m_soundFrom < 0) {
+        m_soundFrom = m_state.position;
+        m_soundClock.start();
+        return;
+    }
+    // wall time and media time both: a seek or a slow start is not "no picture"
+    if (m_soundClock.elapsed() < m_noPictureAfterMs
+        || m_state.position - m_soundFrom < m_noPictureAfterMs / 2)
+        return;
+    if (!m_softwareDecode) {
+        qWarning().noquote() << "[media] sound but no picture for" << m_soundClock.elapsed()
+                             << "ms: trying again with software decoding";
+        m_softwareDecode = true;
+        emit softwareDecodingStarted();
+        m_soundFrom = -1;
+        m_soundClock.invalidate();
+        if (m_noChild) return;   // a test's child: nothing to restart
+        const qint64 at = m_state.position;
+        // Not from here: this runs while the socket's bytes are being read,
+        // and the teardown would free them underneath.
+        QTimer::singleShot(0, this, [this, at]() {
+            const int want = m_wantState;
+            teardown();
+            if (!ensureChild()) return;
+            m_pendingSeek = at;
+            m_wantState = want;
+            startFeed();
+        });
+        return;
+    }
+    qWarning().noquote() << "[media] still no picture with software decoding";
+    m_noPicture = true;
+    emit noPictureChanged();
 }
 
 void IsolatedMediaPlayer::logPlaybackSummary()

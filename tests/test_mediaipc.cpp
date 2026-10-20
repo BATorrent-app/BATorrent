@@ -547,3 +547,48 @@ TEST_CASE("a hostile child cannot push the UI out of bounds", "[integration][med
     CHECK(sink.subtitleText().size() <= 4096);
     CHECK_FALSE(sink.videoFrame().isValid());
 }
+
+// A tester's films played sound over a black screen: the video's frames never
+// reached the window. Sound moving on with no picture now gets a decoder that
+// decodes in software, and if that shows nothing either, the player says so.
+TEST_CASE("sound with no picture tries software decoding, then says so", "[integration][media]")
+{
+    app();
+    IsolatedMediaPlayer player;
+    player.setNoPictureAfterMs(300);
+    const QString name = player.listenWithoutChild();
+    QLocalSocket child;
+    child.connectToServer(name);
+    REQUIRE(child.waitForConnected(3000));
+    ipc::writeFrame(&child, ipc::Kind::Hello, {});
+    child.flush();
+    QSignalSpy software(&player, &IsolatedMediaPlayer::softwareDecodingStarted);
+    QSignalSpy noPicture(&player, &IsolatedMediaPlayer::noPictureChanged);
+
+    // the child plays a file with video; the clock runs and no frame comes
+    auto playFor = [&](qint64 from, int steps) {
+        for (int i = 0; i < steps; ++i) {
+            media::State s;
+            s.playbackState = QMediaPlayer::PlayingState;
+            s.mediaStatus = QMediaPlayer::BufferedMedia;
+            s.hasVideo = true;
+            s.duration = 600000;
+            s.position = from + i * 100;
+            sendEvent(&child, "state", encode(s));
+            pumpUntil([] { return false; }, 60);
+        }
+    };
+    playFor(0, 12);
+    REQUIRE(software.count() == 1);
+    CHECK(player.softwareDecoding());
+    CHECK_FALSE(player.noPicture());
+
+    playFor(5000, 12);
+    REQUIRE(noPicture.count() == 1);
+    CHECK(player.noPicture());
+
+    // a file with no video, or another file, is not "no picture"
+    player.setSource(QUrl(QStringLiteral("file:///other.mkv")));
+    CHECK_FALSE(player.noPicture());
+    CHECK_FALSE(player.softwareDecoding());
+}

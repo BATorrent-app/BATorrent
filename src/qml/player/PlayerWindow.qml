@@ -704,6 +704,37 @@ Window {
         }
     }
 
+    // Sound but no picture, even decoded in software: said, with another way
+    // to watch, instead of a black window. Listening on stays possible.
+    property bool noPictureDismissed: false
+    onStreamUrlChanged: noPictureDismissed = false
+    ColumnLayout {
+        anchors.centerIn: parent
+        visible: player.noPicture === true && !win.noPictureDismissed
+        spacing: 12
+        Text {
+            Layout.alignment: Qt.AlignHCenter
+            Layout.maximumWidth: Math.min(win.width - 64, 460)
+            horizontalAlignment: Text.AlignHCenter
+            wrapMode: Text.WordWrap
+            color: "#e8e8ea"; font.pixelSize: 14; font.family: Theme.fontSans
+            text: (i18n.language, i18n.t("player_no_picture"))
+        }
+        RowLayout {
+            Layout.alignment: Qt.AlignHCenter
+            spacing: 10
+            BtnFlat {
+                primary: true
+                text: (i18n.language, i18n.t("player_open_external"))
+                onClicked: { resume.save(); win.openExternal(); win.close() }
+            }
+            BtnFlat {
+                text: (i18n.language, i18n.t("player_keep_listening"))
+                onClicked: win.noPictureDismissed = true
+            }
+        }
+    }
+
     // Subtitle overlay for both kinds: an external file's cue, else the
     // file's own track (read as ASS by the isolated player). No box behind it
     // unless the user asked for one: an outline and a soft shadow. It rises

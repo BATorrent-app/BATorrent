@@ -591,6 +591,8 @@
   "player_mute": "Mute",
   "player_next": "Next episode",
   "player_next_ep": "Next episode",
+  "player_no_picture": "This video's picture can't be shown here, though its sound plays. Another player usually shows it.",
+  "player_keep_listening": "Keep listening",
   "player_open_external": "Open in external player",
   "player_pip": "Picture-in-picture",
   "player_skip_credits": "Skip credits",

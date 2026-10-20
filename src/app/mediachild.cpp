@@ -28,7 +28,7 @@ int selfTest(const QString &path)
     int frames = 0;
     QObject::connect(&sink, &QVideoSink::videoFrameChanged, [&](const QVideoFrame &f) {
         if (f.isValid() && ++frames == 1)
-            qInfo() << "[media-selftest] first frame" << f.size() << f.pixelFormat();
+            qInfo() << "[media-selftest] first frame" << f.size() << f.pixelFormat() << "handle" << f.handleType();
     });
     QObject::connect(&player, &IsolatedMediaPlayer::decoderCrashed, [] {
         qWarning() << "[media-selftest] decoder crashed";

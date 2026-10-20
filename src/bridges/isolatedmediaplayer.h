@@ -50,6 +50,9 @@ class IsolatedMediaPlayer : public QObject
     // there rather than by the video output, which showed the override codes.
     Q_PROPERTY(QString subtitleHtml READ subtitleHtml NOTIFY subtitleChanged)
     Q_PROPERTY(int subtitleAlign READ subtitleAlign NOTIFY subtitleChanged)
+    // Sound plays but no picture ever came, even decoded in software: the
+    // player says so instead of showing black (see checkPicture).
+    Q_PROPERTY(bool noPicture READ noPicture NOTIFY noPictureChanged)
 
 public:
     explicit IsolatedMediaPlayer(QObject *parent = nullptr);
@@ -107,6 +110,8 @@ signals:
     void subtitleChanged();
     void activeTracksChanged();
     void decoderCrashed();
+    void noPictureChanged();
+    void softwareDecodingStarted();   // sound with no picture: decoding again in software
 
 private:
     bool ensureChild();
@@ -123,6 +128,7 @@ private:
     void onChildLost();
     void teardown();
     void logPlaybackSummary();
+    void checkPicture();
     void send(const QString &method, const QByteArray &args = {});
     QVideoSink *sink() const;
 
@@ -164,7 +170,21 @@ private:
 public:
     QString subtitleHtml() const { return m_subHtml; }
     int subtitleAlign() const { return m_subAlign; }
+    bool noPicture() const { return m_noPicture; }
+    // Test seam: how long sound may play with no picture before the player acts.
+    void setNoPictureAfterMs(qint64 ms) { m_noPictureAfterMs = ms; }
+    bool softwareDecoding() const { return m_softwareDecode; }
 private:
+    // Sound without picture: some files' video never reaches the screen
+    // (frames the hardware decoder hands over that cannot be read). Watched
+    // per file; the first answer is a fresh decoder that decodes in software.
+    bool m_softwareDecode = false;
+    bool m_noPicture = false;
+    qint64 m_noPictureAfterMs = 5000;
+    qint64 m_soundFrom = -1;              // position when sound began with no picture yet
+    QElapsedTimer m_soundClock;
+    bool m_loggedBadFrame = false;
+    bool m_noChild = false;               // listenWithoutChild: a test drives the child side
 
     // Start-up and stall timings for the log, to tell a slow swarm from a
     // slow pipeline.

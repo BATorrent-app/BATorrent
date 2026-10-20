@@ -63,7 +63,9 @@ private:
     qint64 m_ringAsked = 0;
     std::array<bool, media::kSlots> m_busy{};
     int m_framesSent = 0;
-    int m_framesDropped = 0;   // the UI still held every slot
+    int m_framesDropped = 0;
+    bool m_loggedUnmappable = false;   // said once: a frame that could not be read
+    bool m_loggedFirstFrame = false;   // the UI still held every slot
     QElapsedTimer m_frameWindow;
     bool m_stateQueued = false;
 };

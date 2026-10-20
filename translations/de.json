@@ -591,6 +591,8 @@
   "player_mute": "Stumm",
   "player_next": "Nächste Episode",
   "player_next_ep": "Nächste Episode",
+  "player_no_picture": "Das Bild dieses Videos lässt sich hier nicht zeigen, nur der Ton. Ein anderer Player zeigt es meist.",
+  "player_keep_listening": "Nur Ton weiter",
   "player_open_external": "In externem Player öffnen",
   "player_pip": "Bild-in-Bild",
   "player_skip_credits": "Abspann überspringen",

@@ -591,6 +591,8 @@
   "player_mute": "ミュート",
   "player_next": "次のエピソード",
   "player_next_ep": "次のエピソード",
+  "player_no_picture": "この動画は音声のみ再生され、映像を表示できません。別のプレーヤーなら通常表示できます。",
+  "player_keep_listening": "音声だけで続ける",
   "player_open_external": "外部プレーヤーで開く",
   "player_pip": "ピクチャーインピクチャー",
   "player_skip_credits": "クレジットをスキップ",

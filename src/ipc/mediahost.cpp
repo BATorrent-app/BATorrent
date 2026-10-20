@@ -179,6 +179,7 @@ void MediaHost::openSource(qint32 generation, qint64 size, const QString &hint)
     closeSource();
     if (size <= 0) { refuse(QStringLiteral("empty source")); return; }
     m_sourceGen = generation;
+    m_loggedUnmappable = m_loggedFirstFrame = false;   // said once per file
     auto *src = new RemoteSource(size, 120000, this);
     connect(src, &RemoteSource::readRequested, this, [this, generation](quint32 id, qint64 offset, qint32 length) {
         sendEvent(QStringLiteral("read"), media::encode(generation, id, offset, length));
@@ -217,7 +218,22 @@ void MediaHost::onFrame(const QVideoFrame &frame)
 {
     if (!m_sock || !frame.isValid()) return;
     QVideoFrame f = frame;
-    if (!f.map(QVideoFrame::ReadOnly)) return;
+    if (!f.map(QVideoFrame::ReadOnly)) {
+        // a frame the decoder cannot hand over: the picture stays black
+        if (!m_loggedUnmappable) {
+            m_loggedUnmappable = true;
+            qWarning().noquote() << "[media] a decoded frame could not be read: format"
+                                 << int(frame.pixelFormat()) << "handle" << int(frame.handleType())
+                                 << frame.width() << "x" << frame.height();
+        }
+        return;
+    }
+    if (!m_loggedFirstFrame) {
+        m_loggedFirstFrame = true;
+        qInfo().noquote() << "[media] first decoded frame: format" << int(f.pixelFormat())
+                          << "handle" << int(frame.handleType()) << f.width() << "x" << f.height()
+                          << "planes" << f.planeCount();
+    }
     const qint64 need = media::packedSize(f);
     if (!m_ring || need > m_slotBytes) {
         // Ask once per size; frames are dropped until the UI shares a ring.

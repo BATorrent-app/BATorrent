@@ -591,6 +591,8 @@
   "player_mute": "Mudo",
   "player_next": "Próximo episódio",
   "player_next_ep": "Próximo episódio",
+  "player_no_picture": "A imagem deste vídeo não aparece aqui, só o som. Outro player costuma mostrar.",
+  "player_keep_listening": "Continuar só com o som",
   "player_open_external": "Abrir em player externo",
   "player_pip": "Picture-in-picture",
   "player_skip_credits": "Pular créditos",

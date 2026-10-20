@@ -591,6 +591,8 @@
   "player_mute": "静音",
   "player_next": "下一集",
   "player_next_ep": "下一集",
+  "player_no_picture": "此视频在这里只能播放声音，无法显示画面。其他播放器通常可以显示。",
+  "player_keep_listening": "仅继续播放声音",
   "player_open_external": "用外部播放器打开",
   "player_pip": "画中画",
   "player_skip_credits": "跳过片尾",

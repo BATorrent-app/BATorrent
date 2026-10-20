@@ -591,6 +591,8 @@
   "player_mute": "Silenciar",
   "player_next": "Siguiente episodio",
   "player_next_ep": "Siguiente episodio",
+  "player_no_picture": "La imagen de este vídeo no se puede mostrar aquí, aunque el sonido funciona. Otro reproductor suele mostrarla.",
+  "player_keep_listening": "Seguir solo con el sonido",
   "player_open_external": "Abrir en reproductor externo",
   "player_pip": "Imagen en imagen",
   "player_skip_credits": "Saltar créditos",

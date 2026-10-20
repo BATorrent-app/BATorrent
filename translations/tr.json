@@ -591,6 +591,8 @@
   "player_mute": "Sesi kapat",
   "player_next": "Sonraki bölüm",
   "player_next_ep": "Sonraki bölüm",
+  "player_no_picture": "Bu videonun görüntüsü burada gösterilemiyor, yalnızca sesi çalıyor. Başka bir oynatıcı genelde gösterir.",
+  "player_keep_listening": "Yalnızca sesle devam et",
   "player_open_external": "Harici oynatıcıda aç",
   "player_pip": "Resim içinde resim",
   "player_skip_credits": "Jenerigi atla",
