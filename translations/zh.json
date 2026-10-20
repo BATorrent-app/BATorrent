@@ -992,7 +992,7 @@
   "set_sub_proxy": "通过代理路由 Peer 和 Tracker，并用黑名单丢弃 IP 段。",
   "set_sub_size": "字幕大小",
   "set_sub_speed": "全局与备用限速、做种规则和时间计划。",
-  "set_sub_vpn": "将流量绑定到接口，防止 VPN 之外的泄漏。",
+  "set_sub_vpn": "只有 BATorrent 走 VPN，电脑的其他部分仍使用正常连接。",
   "set_sub_webui": "通过浏览器控制 BATorrent，并在同一网络配对手机。",
   "set_subdl_key": "SubDL API 密钥",
   "set_subdl_key_note": "来自 subdl.com 的免费密钥——播放器中电影和剧集的主要字幕来源。默认内置；在此覆盖以使用你自己的账户。",

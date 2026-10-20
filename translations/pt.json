@@ -992,7 +992,7 @@
   "set_sub_proxy": "Roteie peers e trackers por um proxy e descarte faixas de IP por blocklist.",
   "set_sub_size": "Tamanho da legenda",
   "set_sub_speed": "Limites globais e alternativos, regras de seeding e agendamento por horário.",
-  "set_sub_vpn": "Vincule o tráfego a uma interface e proteja contra vazamentos fora da VPN.",
+  "set_sub_vpn": "Só o BATorrent passa pela VPN; o resto do computador continua com a conexão normal.",
   "set_sub_webui": "Controle o BATorrent pelo navegador e pareie o celular na mesma rede.",
   "set_subdl_key": "Chave de API do SubDL",
   "set_subdl_key_note": "Chave grátis em subdl.com — fonte principal de legendas de filmes e séries no player. Já vem embutida; sobrescreva aqui para usar sua própria conta.",

@@ -992,7 +992,7 @@
   "set_sub_proxy": "Eşleri ve izleyicileri vekil üzerinden yönlendirin ve engel listesiyle IP aralıklarını düşürün.",
   "set_sub_size": "Altyazı boyutu",
   "set_sub_speed": "Küresel ve alternatif sınırlar, tohumlama kuralları ve zaman çizelgeleme.",
-  "set_sub_vpn": "Trafiği bir arayüze bağlayın ve VPN dışındaki sızıntılara karşı koruyun.",
+  "set_sub_vpn": "VPN'den yalnızca BATorrent geçer; bilgisayarın geri kalanı normal bağlantısını kullanmaya devam eder.",
   "set_sub_webui": "BATorrent'i tarayıcıdan kontrol edin ve telefonunuzu aynı ağda eşleştirin.",
   "set_subdl_key": "SubDL API anahtarı",
   "set_subdl_key_note": "subdl.com'dan ücretsiz anahtar — oynatıcıda film ve diziler için birincil altyazı kaynağı. Varsayılan olarak yerleşiktir; kendi hesabınızı kullanmak için burada geçersiz kılın.",

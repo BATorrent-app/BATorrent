@@ -992,7 +992,7 @@
   "set_sub_proxy": "Enruta peers y trackers por un proxy y descarta rangos de IP por blocklist.",
   "set_sub_size": "Tamaño de subtítulos",
   "set_sub_speed": "Límites globales y alternativos, reglas de seeding y programación horaria.",
-  "set_sub_vpn": "Vincula el tráfico a una interfaz y protege contra fugas fuera de la VPN.",
+  "set_sub_vpn": "Solo BATorrent pasa por la VPN; el resto del ordenador sigue con su conexión normal.",
   "set_sub_webui": "Controla BATorrent desde el navegador y empareja tu móvil en la misma red.",
   "set_subdl_key": "Clave de API de SubDL",
   "set_subdl_key_note": "Clave gratuita de subdl.com: la fuente principal de subtítulos para películas y series en el reproductor. Incluida por defecto; sobrescríbela aquí para usar tu propia cuenta.",
