@@ -807,6 +807,8 @@
   "set_audio_langs": "Preferred audio languages",
   "set_audio_langs_note": "In order: the player starts on the first one the file has. A track you pick yourself is kept for that torrent.",
   "set_auto_complete_note": "After this continuous seeding time, marks the torrent as Completed (green, paused).",
+  "set_crash_reports": "Send crash reports",
+  "set_crash_reports_note": "If the app crashes, a report of where in the code it happened goes to the developer, to find and fix it. Counts from the next time the app opens.",
   "set_auto_defender": "Auto-exclude downloads from Defender",
   "set_auto_defender_note": "Adds each new download's folder to Windows Defender's exclusions (one UAC prompt). Useful for false positives on cracked games, but it also stops Defender scanning those folders — leave off unless you know you need it.",
   "set_auto_extract2": "Extract archives automatically (RAR/ZIP/7z) on complete",

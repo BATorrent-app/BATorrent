@@ -132,7 +132,9 @@ QtObject {
             { type: "group", label: (i18n.language, i18n.t("set_grp_security")) },
             { type: "toggle", key: "warnSuspiciousFiles", on: true, label: (i18n.language, i18n.t("set_warn_suspicious")), note: (i18n.language, i18n.t("set_warn_suspicious_note")) },
             { type: "toggle", key: "isolatedPlayer", on: true, label: (i18n.language, i18n.t("set_isolated_player")), note: (i18n.language, i18n.t("set_isolated_player_note")) },
-            { type: "toggle", key: "autoDefenderExclude", winOnly: true, label: (i18n.language, i18n.t("set_auto_defender")), note: (i18n.language, i18n.t("set_auto_defender_note")) }
+            { type: "toggle", key: "autoDefenderExclude", winOnly: true, label: (i18n.language, i18n.t("set_auto_defender")), note: (i18n.language, i18n.t("set_auto_defender_note")) },
+            { type: "toggle", key: "sendCrashReports", on: true, hidden: typeof crashReportsBuilt === "undefined" || !crashReportsBuilt,
+              label: (i18n.language, i18n.t("set_crash_reports")), note: (i18n.language, i18n.t("set_crash_reports_note")) }
         ],
         // 1 Velocidade
         [

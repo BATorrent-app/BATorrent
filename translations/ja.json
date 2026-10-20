@@ -807,6 +807,8 @@
   "set_audio_langs": "優先する音声言語",
   "set_audio_langs_note": "順番どおりに、ファイルにある最初の言語で再生します。自分で選んだトラックはその torrent で維持されます。",
   "set_auto_complete_note": "この連続シード時間の後、トレントを完了（緑・一時停止）としてマークします。",
+  "set_crash_reports": "クラッシュレポートを送信",
+  "set_crash_reports_note": "アプリがクラッシュしたとき、コードのどこで起きたかのレポートが開発者に送られ、原因の特定と修正に使われます。次回の起動から有効になります。",
   "set_auto_defender": "ダウンロードを Defender から自動除外",
   "set_auto_defender_note": "新しいダウンロードのフォルダーを Windows Defender の除外に追加します（UAC 確認が一度）。クラックゲームの誤検知に便利ですが、そのフォルダーはスキャンされなくなります。必要でなければオフのままに。",
   "set_auto_extract2": "完了時にアーカイブを自動展開（RAR/ZIP/7z）",

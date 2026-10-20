@@ -807,6 +807,8 @@
   "set_audio_langs": "首选音频语言",
   "set_audio_langs_note": "按顺序：播放器使用文件中第一个可用的语言。手动选择的音轨会保留给该种子。",
   "set_auto_complete_note": "持续做种达到此时间后，将种子标记为已完成（绿色，暂停）。",
+  "set_crash_reports": "发送崩溃报告",
+  "set_crash_reports_note": "应用崩溃时，会把崩溃发生在代码中的位置报告给开发者，用于查找和修复问题。下次打开应用时生效。",
   "set_auto_defender": "自动将下载从 Defender 中排除",
   "set_auto_defender_note": "将每个新下载的文件夹加入 Windows Defender 排除列表（一次 UAC 提示）。对破解游戏的误报有用，但也会让 Defender 不再扫描这些文件夹——除非确需，否则保持关闭。",
   "set_auto_extract2": "完成时自动解压（RAR/ZIP/7z）",

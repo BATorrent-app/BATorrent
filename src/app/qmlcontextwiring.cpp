@@ -50,6 +50,12 @@ void registerProperties(QQmlContext *ctx, const QmlContextObjects &o)
     ctx->setContextProperty("notifications", o.notifications);
     ctx->setContextProperty("i18n", o.i18n);
     ctx->setContextProperty("batSmokeLoaders", qEnvironmentVariableIsSet("BAT_SMOKE_LOADERS"));
+    // whether this build sends crash reports at all: Settings offers the switch only then
+#ifdef BAT_HAVE_SENTRY
+    ctx->setContextProperty("crashReportsBuilt", true);
+#else
+    ctx->setContextProperty("crashReportsBuilt", false);
+#endif
 #ifndef BAT_STORE_BUILD
     ctx->setContextProperty("updater", o.updater);
     ctx->setContextProperty("vpn", o.vpn);

@@ -20,6 +20,8 @@ void logDependencyVersions();
 void showQmlLoadFailure(const QString &logHint);
 void installQtMessageHandler();
 
+// Settings › Security › Send crash reports (on unless turned off).
+bool crashReportsWanted();
 #ifdef BAT_HAVE_SENTRY
 void initSentry(const QString &role);
 #endif

@@ -12,6 +12,7 @@
 
 #include <QApplication>
 #include <QCoreApplication>
+#include <QDebug>
 #include <QFileInfo>
 #include <QFont>
 #include <QFontDatabase>
@@ -226,9 +227,20 @@ void installQtMessageHandler()
     qInstallMessageHandler(qtMessageHandler);
 }
 
+bool crashReportsWanted()
+{
+    return QSettings().value(QStringLiteral("sendCrashReports"), true).toBool();
+}
+
 #ifdef BAT_HAVE_SENTRY
 void initSentry(const QString &role)
 {
+    // Settings › Security › Send crash reports. Read at start by each process
+    // (the UI, the engine, the player), so a change counts from the next start.
+    if (!crashReportsWanted()) {
+        qInfo().noquote() << "[sentry] off: the user turned crash reports off (" + role + ")";
+        return;
+    }
     sentry_options_t *o = sentry_options_new();
 #ifdef BAT_SENTRY_DSN
     sentry_options_set_dsn(o, BAT_SENTRY_DSN);

@@ -807,6 +807,8 @@
   "set_audio_langs": "Tercih edilen ses dilleri",
   "set_audio_langs_note": "Sırayla: oynatıcı dosyada bulunan ilk dille başlar. Elle seçtiğiniz parça o torrent için kalır.",
   "set_auto_complete_note": "Bu sürekli tohumlama süresinden sonra torrent'i Tamamlandı (yeşil, duraklatılmış) olarak işaretler.",
+  "set_crash_reports": "Çökme raporları gönder",
+  "set_crash_reports_note": "Uygulama çökerse, kodun neresinde olduğunu gösteren bir rapor hatayı bulup düzeltmesi için geliştiriciye gider. Uygulamanın bir sonraki açılışından itibaren geçerlidir.",
   "set_auto_defender": "İndirmeleri Defender'dan otomatik hariç tut",
   "set_auto_defender_note": "Her yeni indirme klasörünü Windows Defender dışlamalarına ekler (tek bir UAC istemi). Kırık oyunlarda yanlış pozitifler için kullanışlıdır, ancak bu klasörlerin Defender tarafından taranmasını da durdurur — ihtiyacınız olduğundan emin değilseniz kapalı bırakın.",
   "set_auto_extract2": "Tamamlandığında arşivleri otomatik ayıkla (RAR/ZIP/7z)",

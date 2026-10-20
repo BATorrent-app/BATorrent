@@ -807,6 +807,8 @@
   "set_audio_langs": "Bevorzugte Audiosprachen",
   "set_audio_langs_note": "Der Reihe nach: Der Player beginnt mit der ersten, die die Datei hat. Eine selbst gewählte Spur bleibt für diesen Torrent.",
   "set_auto_complete_note": "Nach dieser durchgehenden Seeding-Zeit wird der Torrent als Abgeschlossen markiert (grün, pausiert).",
+  "set_crash_reports": "Absturzberichte senden",
+  "set_crash_reports_note": "Stürzt die App ab, geht ein Bericht darüber, wo im Code es passiert ist, an den Entwickler, damit er den Fehler findet und behebt. Gilt ab dem nächsten Start.",
   "set_auto_defender": "Downloads automatisch von Defender ausschließen",
   "set_auto_defender_note": "Fügt den Ordner jedes neuen Downloads zu den Defender-Ausnahmen hinzu (eine UAC-Abfrage). Nützlich bei Fehlalarmen bei gecrackten Spielen, verhindert aber auch das Scannen dieser Ordner — aus lassen, sofern nicht benötigt.",
   "set_auto_extract2": "Archive automatisch entpacken (RAR/ZIP/7z) bei Abschluss",
