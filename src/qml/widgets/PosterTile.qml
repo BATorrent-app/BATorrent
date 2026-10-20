@@ -61,7 +61,10 @@ Item {
     }
     readonly property string groupCaption: {
         if (!tile.isGroup || !controller || !controller.rowModel) return ""
-        var s = (tile.groupCount, controller.rowModel.groupSummary(tile.index)).seasons || ""
+        var sum = (tile.groupCount, controller.rowModel.groupSummary(tile.index))
+        // a TMDB collection: "Collection · 3 films"
+        if (sum.collection) return (i18n.language, i18n.t("insp_collection_n")).arg(tile.groupCount)
+        var s = sum.seasons || ""
         // items, not episodes: a season pack sits among them
         var n = (i18n.language, i18n.t("group_items_n")).arg(tile.groupCount)
         if (tile.groupRepeats > 0) n += " · " + (i18n.language, i18n.t("group_repeats_n")).arg(tile.groupRepeats)

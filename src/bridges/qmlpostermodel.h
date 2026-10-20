@@ -57,7 +57,11 @@ public:
         ShowKeyRole,
         ShowTitleRole,
         SeasonRole,
-        EpisodeRole
+        EpisodeRole,
+        // A film's TMDB collection, which the library also groups by: 0 and
+        // empty for anything else (a show's episodes group as the show).
+        CollectionIdRole,
+        CollectionNameRole
     };
 
     explicit QmlPosterModel(IEngine *session, MetadataResolver *resolver,
@@ -100,6 +104,8 @@ private:
         QString title;
         int season = -1;
         int episode = -1;
+        int collectionId = 0;
+        QString collectionName;
     };
     ShowInfo showInfo(const QString &hash, const QString &name) const;
     mutable QHash<QString, ShowInfo> m_showCache;

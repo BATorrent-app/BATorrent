@@ -74,7 +74,7 @@ Rectangle {
                 visible: detailPanel.groupMode
                 anchors.left: parent.left; anchors.leftMargin: 24
                 anchors.verticalCenter: parent.verticalCenter
-                text: (i18n.language, i18n.t("insp_series_n")).arg(panelGroup.summary.count || 0)
+                text: (i18n.language, i18n.t(panelGroup.summary.collection ? "insp_collection_n" : "insp_series_n")).arg(panelGroup.summary.count || 0)
                 color: Theme.t4
                 font.pixelSize: 11; font.weight: Font.Bold; font.letterSpacing: 1.0
                 font.capitalization: Font.AllUppercase; font.family: Theme.fontSans
@@ -162,7 +162,7 @@ Rectangle {
                         Item {
                             width: parent.width; height: 16
                             Text {
-                                text: [panelGroup.summary.seasons || "", (i18n.language, i18n.t("group_items_n")).arg(panelGroup.summary.count || 0)]
+                                text: [panelGroup.summary.seasons || "", (i18n.language, i18n.t(panelGroup.summary.collection ? "group_films_n" : "group_items_n")).arg(panelGroup.summary.count || 0)]
                                       .filter(function (x) { return x.length > 0 }).join(" · ")
                                 color: Theme.t1; font.pixelSize: 12; font.weight: Font.DemiBold; font.family: Theme.fontSans
                             }

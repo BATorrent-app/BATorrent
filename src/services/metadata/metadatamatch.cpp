@@ -248,4 +248,15 @@ QStringList orphanCacheFiles(const QStringList &names, const QSet<QString> &keep
     return out;
 }
 
+MovieCollection movieCollection(const QJsonObject &details)
+{
+    MovieCollection c;
+    if (details.value(QLatin1String("id")).toInt() <= 0) return c;   // not a film's details
+    c.answered = true;
+    const QJsonObject col = details.value(QLatin1String("belongs_to_collection")).toObject();
+    c.id = col.value(QLatin1String("id")).toInt();
+    if (c.id > 0) c.name = col.value(QLatin1String("name")).toString();
+    return c;
+}
+
 } // namespace MetadataMatch

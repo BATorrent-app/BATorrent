@@ -29,6 +29,9 @@ Rectangle {
     readonly property bool shown: showInspector && controller.gridView
     // A series group selected: the panel lists its episodes, and the tabs
     // wait for one of them to be picked.
+    // what the selected group is: a show, or a TMDB collection of films
+    readonly property var groupSummary: groupRow >= 0 && controller && controller.rowModel
+                                        ? controller.rowModel.groupSummary(groupRow) : ({})
     readonly property int groupRow: (controller && controller.keyedRows && controller.selectedRows.length === 1
                                      && controller.rowModel.isGroup(controller.selectedRows[0]))
                                     ? controller.selectedRows[0] : -1
@@ -117,7 +120,7 @@ Rectangle {
                     // question deserves. Two of the same title, one small and
                     // one large, just read as a mistake.
                     text: (i18n.language, sidebar.groupRow >= 0
-                           ? i18n.t("insp_series_n").arg(sidebar.controller.rowModel.groupSummary(sidebar.groupRow).count || 0)
+                           ? i18n.t(sidebar.groupSummary.collection ? "insp_collection_n" : "insp_series_n").arg(sidebar.groupSummary.count || 0)
                            : sidebar.win.hasSel ? i18n.t("detail_selected_torrent") : i18n.t("insp_overview"))
                     color: Theme.t4
                     font.pixelSize: 10
@@ -188,7 +191,7 @@ Rectangle {
                 Layout.rightMargin: 24
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.WordWrap
-                text: (i18n.language, i18n.t("detail_pick_episode"))
+                text: (i18n.language, i18n.t(sidebar.groupSummary.collection ? "detail_pick_film" : "detail_pick_episode"))
                 color: Theme.t4
                 font.pixelSize: 13
                 font.family: Theme.fontSans

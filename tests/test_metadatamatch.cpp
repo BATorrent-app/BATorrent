@@ -218,3 +218,26 @@ TEST_CASE("locatePosterFile prefers existing stored path then hash jpg",
                 QString(), posterDir, hash.toUpper())
             == jpg);
 }
+
+// A tester asked for films of one franchise to sit together. TMDB says which
+// collection a film belongs to only in its details; the search result has none.
+TEST_CASE("movieCollection reads TMDB's collection from a film's details", "[metadata][collection]")
+{
+    QJsonObject lotr{{"id", 120}, {"title", "The Fellowship of the Ring"},
+                     {"belongs_to_collection", QJsonObject{{"id", 119}, {"name", "The Lord of the Rings Collection"},
+                                                           {"poster_path", "/x.jpg"}}}};
+    const auto c = MetadataMatch::movieCollection(lotr);
+    CHECK(c.answered);
+    CHECK(c.id == 119);
+    CHECK(c.name == QStringLiteral("The Lord of the Rings Collection"));
+
+    // most films belong to none: answered, and no collection
+    const auto none = MetadataMatch::movieCollection(QJsonObject{{"id", 550}, {"belongs_to_collection", QJsonValue()}});
+    CHECK(none.answered);
+    CHECK(none.id == 0);
+    CHECK(none.name.isEmpty());
+
+    // an error body is no answer: asked again on a later run
+    const auto err = MetadataMatch::movieCollection(QJsonObject{{"status_code", 34}, {"status_message", "not found"}});
+    CHECK_FALSE(err.answered);
+}

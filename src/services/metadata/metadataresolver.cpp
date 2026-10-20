@@ -182,8 +182,10 @@ void MetadataResolver::resolve(const QString &infoHash, const QString &torrentNa
     if (m_cache.contains(key)) {
         const MetadataResult c = m_cache.value(key);
         // Have art, or an intentional clearMetadata blank: don't re-hit TMDB/IGDB.
-        if (!c.posterPath.isEmpty() || (c.valid && c.title.isEmpty()))
+        if (!c.posterPath.isEmpty() || (c.valid && c.title.isEmpty())) {
+            queueCollectionCheck(key);
             return;
+        }
         // Title cached but poster file gone/stale: fall through to refill art.
     }
 
@@ -219,8 +221,10 @@ void MetadataResolver::batchResolve(const QStringList &infoHashes, const QString
             continue;
         if (m_cache.contains(key)) {
             const MetadataResult c = m_cache.value(key);
-            if (!c.posterPath.isEmpty() || (c.valid && c.title.isEmpty()))
+            if (!c.posterPath.isEmpty() || (c.valid && c.title.isEmpty())) {
+                queueCollectionCheck(key);
                 continue;
+            }
         }
         ParsedName parsed = NameParser::parse(torrentNames[i]);
         m_queue.enqueue({key, parsed});
@@ -285,10 +289,42 @@ void MetadataResolver::clearMetadata(const QString &infoHash)
     emit metadataReady(key, r);
 }
 
+void MetadataResolver::queueCollectionCheck(const QString &key)
+{
+    const MetadataResult c = m_cache.value(key);
+    if (c.contentType != ContentType::Movie || c.tmdbId <= 0 || c.collectionChecked
+        || m_collectionAsked.contains(key))
+        return;
+    m_collectionAsked.insert(key);
+    m_collectionQueue.enqueue(key);
+    if (!m_requestInFlight && !m_rateLimiter.isActive())
+        processQueue();
+}
+
 void MetadataResolver::processQueue()
 {
-    if (m_queue.isEmpty() || m_requestInFlight)
+    if (m_requestInFlight)
         return;
+    // Lookups first; the collection of a film already shown can wait.
+    if (m_queue.isEmpty()) {
+        if (m_collectionQueue.isEmpty())
+            return;
+        const QString key = m_collectionQueue.dequeue();
+        const MetadataResult c = m_cache.value(key);
+        if (c.contentType != ContentType::Movie || c.tmdbId <= 0 || c.collectionChecked) {
+            processQueue();
+            return;
+        }
+        fetchTmdbMovieDetails(c.tmdbId, c, [this, key](MetadataResult r) {
+            if (r.collectionChecked) {
+                m_cache.insert(key, r);
+                saveToDisk(key, r);
+                if (r.collectionId > 0) emit metadataReady(key, r);
+            }
+            finishLookup(key);
+        });
+        return;
+    }
 
     auto [infoHash, parsed] = m_queue.dequeue();
 
@@ -390,11 +426,44 @@ void MetadataResolver::queryTmdbMovie(const QString &infoHash, const ParsedName 
                 finishLookup(infoHash);
             }
         };
-        // empty overview = no translation for this language → fall back to EN
-        if (result.description.isEmpty() && tmdbId > 0 && tmdbLang() != QStringLiteral("en-US"))
-            fetchTmdbOverviewEn(QStringLiteral("movie"), tmdbId, result, finish);
-        else
-            finish(result);
+        // the details carry the collection; then, with an empty overview (no
+        // translation for this language), the English one
+        if (tmdbId <= 0) { finish(result); return; }
+        fetchTmdbMovieDetails(tmdbId, result, [this, tmdbId, finish](MetadataResult r) {
+            if (r.description.isEmpty() && tmdbLang() != QStringLiteral("en-US"))
+                fetchTmdbOverviewEn(QStringLiteral("movie"), tmdbId, r, finish);
+            else
+                finish(r);
+        });
+    });
+}
+
+void MetadataResolver::fetchTmdbMovieDetails(int id, MetadataResult result,
+                                             std::function<void(MetadataResult)> done)
+{
+    QUrl url(TmdbBaseUrl + QStringLiteral("/movie/%1").arg(id));
+    QUrlQuery q;
+    q.addQueryItem(QStringLiteral("api_key"), tmdbApiKey());
+    q.addQueryItem(QStringLiteral("language"), tmdbLang());
+    url.setQuery(q);
+    QNetworkRequest req(url);
+    req.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("BATorrent/") + QLatin1String(APP_VERSION));
+    req.setTransferTimeout(10000);
+    m_requestInFlight = true;   // the queue stays serialized (TMDB answers 429 to bursts)
+    QNetworkReply *reply = m_nam->get(req);
+    connect(reply, &QNetworkReply::finished, this, [this, reply, result, done]() mutable {
+        reply->deleteLater();
+        m_requestInFlight = false;
+        if (reply->error() == QNetworkReply::NoError) {
+            const MetadataMatch::MovieCollection c =
+                MetadataMatch::movieCollection(QJsonDocument::fromJson(reply->readAll()).object());
+            if (c.answered) {
+                result.collectionId = c.id;
+                result.collectionName = c.name;
+                result.collectionChecked = true;
+            }
+        }
+        done(result);
     });
 }
 
@@ -798,6 +867,7 @@ void MetadataResolver::loadFromDisk(const QString &infoHash)
     result.tmdbId = obj.value(QLatin1String("tmdbId")).toInt();
     result.collectionId = obj.value(QLatin1String("collectionId")).toInt();
     result.collectionName = obj.value(QLatin1String("collectionName")).toString();
+    result.collectionChecked = obj.value(QLatin1String("collectionChecked")).toBool();
     result.contentType = MetadataMatch::contentTypeFromString(
         obj.value(QLatin1String("contentType")).toString());
 
@@ -828,6 +898,7 @@ void MetadataResolver::saveToDisk(const QString &infoHash, const MetadataResult 
     obj.insert(QLatin1String("tmdbId"), result.tmdbId);
     obj.insert(QLatin1String("collectionId"), result.collectionId);
     obj.insert(QLatin1String("collectionName"), result.collectionName);
+    obj.insert(QLatin1String("collectionChecked"), result.collectionChecked);
     obj.insert(QLatin1String("genres"), QJsonArray::fromStringList(result.genres));
     obj.insert(QLatin1String("platforms"), QJsonArray::fromStringList(result.platforms));
     obj.insert(QLatin1String("posterFile"), result.posterPath);

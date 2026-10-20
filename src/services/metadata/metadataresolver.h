@@ -31,6 +31,7 @@ struct MetadataResult {
     // guess Sherwan #22 asks us not to make.
     int collectionId = 0;
     QString collectionName;
+    bool collectionChecked = false;   // /movie/{id} was asked (films cached before it was)
     bool valid = false;
 };
 
@@ -80,6 +81,15 @@ private:
     // then continue via `done`. kind = "movie" | "tv".
     void fetchTmdbOverviewEn(const QString &kind, int id, MetadataResult result,
                              std::function<void(MetadataResult)> done);
+    // A film's details: the collection it belongs to, which the search does
+    // not carry. Then on to `done`, failed or not.
+    void fetchTmdbMovieDetails(int id, MetadataResult result,
+                               std::function<void(MetadataResult)> done);
+    // A cached film from before collections were asked for: ask now, when the
+    // library shows it and nothing else is waiting.
+    void queueCollectionCheck(const QString &key);
+    QQueue<QString> m_collectionQueue;
+    QSet<QString> m_collectionAsked;   // this run: a failed ask is not repeated until the next
     void downloadPoster(const QString &infoHash, const QString &url, const MetadataResult &partial);
     void loadFromDisk(const QString &infoHash);
     void saveToDisk(const QString &infoHash, const MetadataResult &result);

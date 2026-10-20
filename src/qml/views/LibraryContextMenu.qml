@@ -30,6 +30,7 @@ DMenu {
     // nothing about the rest.
     property bool onGroup: false
     property bool groupOpen: false
+    property bool groupFilms: false   // a TMDB collection: films, not episodes
     property bool multi: false
     property string cat: ""
     onAboutToShow: {
@@ -37,6 +38,7 @@ DMenu {
         var keyed = controller.keyedRows
         onGroup = keyed && torrentFilter.isGroup(row)
         groupOpen = onGroup && torrentFilter.isGroupExpanded(row)
+        groupFilms = onGroup && !!torrentFilter.groupSummary(row).collection
         multi = session.selectedRows().length > 1
         cat = session.selectedCategory()
     }
@@ -75,7 +77,8 @@ DMenu {
         hideWhenDisabled: true
         enabled: root.onGroup
         iconSrc: "qrc:/icons/chevron.svg"
-        text: (i18n.language, root.groupOpen ? i18n.t("lib_group_close") : i18n.t("lib_group_open"))
+        text: (i18n.language, root.groupFilms ? i18n.t(root.groupOpen ? "lib_group_close_films" : "lib_group_open_films")
+                                              : i18n.t(root.groupOpen ? "lib_group_close" : "lib_group_open"))
         onTriggered: controller.toggleGroup(controller.selected)
     }
     // A finished item has no download to pause: what pausing stops there is

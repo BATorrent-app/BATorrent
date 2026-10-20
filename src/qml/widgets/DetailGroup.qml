@@ -166,7 +166,7 @@ ColumnLayout {
                     height: 16
                     Text {
                         anchors.left: parent.left
-                        text: [grp.summary.seasons || "", (i18n.language, i18n.t("group_items_n")).arg(grp.summary.count || 0)]
+                        text: [grp.summary.seasons || "", (i18n.language, i18n.t(grp.summary.collection ? "group_films_n" : "group_items_n")).arg(grp.summary.count || 0)]
                               .filter(function (x) { return x.length > 0 }).join(" · ")
                         color: Theme.t1
                         font.pixelSize: 12
@@ -214,7 +214,7 @@ ColumnLayout {
         Layout.leftMargin: 16
         Layout.topMargin: grp.showHeader ? 0 : 14
         Layout.bottomMargin: 6
-        text: (i18n.language, i18n.t("detail_episodes"))
+        text: (i18n.language, i18n.t(grp.summary.collection ? "detail_films" : "detail_episodes"))
         color: Theme.t4
         font.pixelSize: 10
         font.weight: Font.DemiBold

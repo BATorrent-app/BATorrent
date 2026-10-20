@@ -45,6 +45,8 @@ QStringList keys(const QVector<Member> &members)
             out << QStringLiteral("tmdb:") + QString::number(id);
         else if (!m.nameKey.isEmpty())
             out << QStringLiteral("name:") + m.nameKey;
+        else if (m.collectionId > 0)
+            out << QStringLiteral("col:") + QString::number(m.collectionId);
         else
             out << QString();
     }
@@ -68,6 +70,7 @@ QVector<Row> layout(const QVector<Member> &members, const QSet<QString> &expande
             const Member &y = members[b];
             if (x.season != y.season) return x.season < y.season;
             if (x.episode != y.episode) return x.episode < y.episode;
+            if (x.year != y.year) return x.year < y.year;   // films: in release order
             return x.name.compare(y.name, Qt::CaseInsensitive) < 0;
         });
     }

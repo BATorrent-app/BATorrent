@@ -276,3 +276,42 @@ TEST_CASE("open groups are remembered across restarts", "[librarygroups]")
     }
     QSettings("BATorrent", "BATorrent").remove(key);
 }
+
+// A tester asked for a franchise's films to sit together. TMDB says which
+// collection a film belongs to; two or more films of one fold into a group,
+// in release order, and a film of no collection stays a plain row.
+TEST_CASE("films of one TMDB collection group, in release order", "[librarygroups][collection]")
+{
+    auto inCol = [](const char *name, int col, int year) {
+        Member m = film(name);
+        m.collectionId = col;
+        m.year = year;
+        return m;
+    };
+    const QVector<Member> members = {
+        inCol("The Return of the King", 119, 2003),
+        film("Fight Club"),
+        inCol("The Fellowship of the Ring", 119, 2001),
+        inCol("The Two Towers", 119, 2002),
+        inCol("Toy Story", 10194, 1995),   // alone in its collection: no group
+    };
+    const QStringList k = LibraryGroups::keys(members);
+    CHECK(k[0] == QStringLiteral("col:119"));
+    CHECK(k[1].isEmpty());
+    CHECK(LibraryGroups::isCollectionKey(k[0]));
+    CHECK_FALSE(LibraryGroups::isCollectionKey(QStringLiteral("tmdb:1399")));
+
+    const auto rows = LibraryGroups::layout(members, {QStringLiteral("col:119")});
+    REQUIRE(rows.size() == 6);   // the group, its three films, Fight Club, Toy Story
+    CHECK(rows[0].group);
+    CHECK(rows[0].members == QVector<int>({2, 3, 0}));   // 2001, 2002, 2003
+    CHECK(rows[1].child);
+    CHECK(rows[1].members == QVector<int>({2}));
+    CHECK(rows[4].members == QVector<int>({1}));
+    CHECK_FALSE(rows[5].group);
+
+    // an episode never groups by a collection, even if one were set
+    Member e = ep("Bleach", 1, 1);
+    e.collectionId = 119;
+    CHECK(LibraryGroups::keys({e}).first().startsWith(QStringLiteral("name:")));
+}

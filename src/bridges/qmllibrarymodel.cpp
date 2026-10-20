@@ -18,7 +18,7 @@ using PM = QmlPosterModel;
 const QList<int> &groupingRoles()
 {
     static const QList<int> roles = {PM::NameRole, PM::ShowTmdbRole, PM::ShowKeyRole,
-                                     PM::SeasonRole, PM::EpisodeRole};
+                                     PM::SeasonRole, PM::EpisodeRole, PM::CollectionIdRole};
     return roles;
 }
 
@@ -168,6 +168,24 @@ QVariant QmlLibraryModel::groupData(const Row &row, int role) const
         return done;
     };
 
+    // A TMDB collection groups films, not episodes: its own name, Movies, and
+    // the rest as for a show.
+    if (LibraryGroups::isCollectionKey(row.groupKey)) {
+        switch (role) {
+        case PM::NameRole:
+        case PM::MetaTitleRole:
+        case PM::ShowTitleRole:
+            for (const QModelIndex &i : live) {
+                const QString n = val(i, PM::CollectionNameRole).toString();
+                if (!n.isEmpty()) return n;
+            }
+            return val(live.first(), PM::NameRole);
+        case PM::AutoCategoryRole: return QStringLiteral("Movies");
+        case PM::FileKindRole:     return QStringLiteral("MOVIE");
+        default: break;
+        }
+    }
+
     switch (role) {
     case PM::NameRole:
     case PM::MetaTitleRole:
@@ -277,6 +295,8 @@ QVector<QmlLibraryModel::Row> QmlLibraryModel::computeRows() const
         m.nameKey = mi.data(PM::ShowKeyRole).toString();
         m.season = mi.data(PM::SeasonRole).isValid() ? mi.data(PM::SeasonRole).toInt() : -1;
         m.episode = mi.data(PM::EpisodeRole).isValid() ? mi.data(PM::EpisodeRole).toInt() : -1;
+        m.collectionId = mi.data(PM::CollectionIdRole).toInt();
+        m.year = mi.data(PM::YearRole).toInt();
         m.name = mi.data(PM::NameRole).toString();
         hashes << mi.data(PM::InfoHashRole).toString();
     }
@@ -434,7 +454,11 @@ QVariantList QmlLibraryModel::groupEpisodes(int row) const
         const int season = val(PM::SeasonRole).isValid() ? val(PM::SeasonRole).toInt() : -1;
         const int episode = val(PM::EpisodeRole).isValid() ? val(PM::EpisodeRole).toInt() : -1;
         QString label;
-        if (episode > 0)
+        const bool film = LibraryGroups::isCollectionKey(m_rows[row].groupKey);
+        if (film) {
+            const int year = val(PM::YearRole).toInt();   // a film of a collection: its year
+            if (year > 0) label = QString::number(year);
+        } else if (episode > 0)
             label = season > 0 ? QStringLiteral("S%1E%2").arg(season, 2, 10, QLatin1Char('0')).arg(episode, 2, 10, QLatin1Char('0'))
                                : QStringLiteral("E%1").arg(episode, 2, 10, QLatin1Char('0'));
         else if (season > 0)
@@ -443,7 +467,9 @@ QVariantList QmlLibraryModel::groupEpisodes(int row) const
         m[QStringLiteral("sourceRow")] = m_filter->mapToSource(p.row());
         m[QStringLiteral("infoHash")] = val(PM::InfoHashRole);
         m[QStringLiteral("label")] = label;
-        m[QStringLiteral("name")] = val(PM::NameRole);
+        m[QStringLiteral("name")] = film && !val(PM::MetaTitleRole).toString().isEmpty()
+                                        ? val(PM::MetaTitleRole) : val(PM::NameRole);
+        m[QStringLiteral("year")] = val(PM::YearRole);
         m[QStringLiteral("progress")] = val(PM::ProgressRole);
         m[QStringLiteral("stateKey")] = val(PM::StateKeyRole);
         m[QStringLiteral("stateString")] = val(PM::StateStringRole);
@@ -457,10 +483,11 @@ QVariantList QmlLibraryModel::groupEpisodes(int row) const
         m[QStringLiteral("showTmdb")] = val(PM::ShowTmdbRole);
         eps << Ep{ season, episode, m };
     }
-    // packs (no episode) first in their season, then by episode
+    // packs (no episode) first in their season, then by episode; films by year
     std::stable_sort(eps.begin(), eps.end(), [](const Ep &a, const Ep &b) {
         if (a.season != b.season) return a.season < b.season;
-        return a.episode < b.episode;
+        if (a.episode != b.episode) return a.episode < b.episode;
+        return a.m.value(QStringLiteral("year")).toInt() < b.m.value(QStringLiteral("year")).toInt();
     });
     for (const Ep &e : eps) out << e.m;
     return out;
@@ -491,6 +518,7 @@ QVariantMap QmlLibraryModel::groupSummary(int row) const
     out[QStringLiteral("progress")] = groupData(r, PM::ProgressRole);
     out[QStringLiteral("count")] = int(r.members.size());
     out[QStringLiteral("seasons")] = span;
+    out[QStringLiteral("collection")] = LibraryGroups::isCollectionKey(r.groupKey);
     return out;
 }
 

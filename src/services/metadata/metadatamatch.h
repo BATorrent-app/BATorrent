@@ -49,6 +49,15 @@ ContentType contentTypeFromString(const QString &s);
 
 QStringList genreNamesFromIds(const QJsonArray &genreIds);
 
+// The franchise a film belongs to, from TMDB's /movie/{id}. answered is false
+// when the reply is not a film's details (an error body): asked again later.
+struct MovieCollection {
+    bool answered = false;
+    int id = 0;          // 0: the film belongs to none, which is most of them
+    QString name;        // "The Lord of the Rings Collection", in the asked language
+};
+MovieCollection movieCollection(const QJsonObject &details);
+
 // Info-hashes are hex; magnets/addons may upper-case them while libtorrent
 // prints lower-case. One canonical form keeps the on-disk cache and lookups aligned.
 inline QString canonicalInfoHash(const QString &hash) { return hash.toLower(); }

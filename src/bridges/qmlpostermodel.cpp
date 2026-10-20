@@ -308,6 +308,8 @@ QVariant QmlPosterModel::data(const QModelIndex &index, int role) const
     case ShowTitleRole:   return showInfo(hash, info.name).title;
     case SeasonRole:      return showInfo(hash, info.name).season;
     case EpisodeRole:     return showInfo(hash, info.name).episode;
+    case CollectionIdRole:   return showInfo(hash, info.name).collectionId;
+    case CollectionNameRole: return showInfo(hash, info.name).collectionName;
     }
     return {};
 }
@@ -332,6 +334,9 @@ QmlPosterModel::ShowInfo QmlPosterModel::showInfo(const QString &hash, const QSt
             if (series) {
                 out.tmdbId = meta.tmdbId;
                 out.title = meta.title;
+            } else if (meta.contentType == ContentType::Movie && meta.collectionId > 0) {
+                out.collectionId = meta.collectionId;
+                out.collectionName = meta.collectionName;
             }
         }
     }
@@ -344,6 +349,8 @@ QmlPosterModel::ShowInfo QmlPosterModel::showInfo(const QString &hash, const QSt
         out.episode = tag.episode >= 0 ? tag.episode : (tag.pack ? -1 : pn.episode);
         // Nothing to group by: no id and no name left after parsing.
         if (out.key.isEmpty() && out.tmdbId <= 0) out = ShowInfo{name};
+        out.collectionId = 0;   // an episode groups as its show
+        out.collectionName.clear();
     }
     if (!hash.isEmpty())
         m_showCache.insert(hash, out);
@@ -385,7 +392,9 @@ QHash<int, QByteArray> QmlPosterModel::roleNames() const
         {ShowKeyRole,     "showKey"},
         {ShowTitleRole,   "showTitle"},
         {SeasonRole,      "season"},
-        {EpisodeRole,     "episode"}
+        {EpisodeRole,     "episode"},
+        {CollectionIdRole,   "collectionId"},
+        {CollectionNameRole, "collectionName"}
     };
 }
 
@@ -459,7 +468,8 @@ void QmlPosterModel::posterResolved(const QString &hash)
         if (m_session->torrentHashAt(row) == hash) {
             emit dataChanged(index(row), index(row),
                              {PosterPathRole, MetaTitleRole, YearRole, GenresRole,
-                              AutoCategoryRole, ShowTmdbRole, ShowKeyRole, ShowTitleRole});
+                              AutoCategoryRole, ShowTmdbRole, ShowKeyRole, ShowTitleRole,
+                              CollectionIdRole, CollectionNameRole});
         }
     }
 }
