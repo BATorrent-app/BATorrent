@@ -23,7 +23,7 @@
 
 namespace BootHealth {
 
-CheckResult checkCrashSentinel()
+CheckResult checkCrashSentinel(QWidget *cover)
 {
     QSettings st;
     int crashes = st.value("bootCrashes", 0).toInt();
@@ -36,6 +36,7 @@ CheckResult checkCrashSentinel()
     if (crashes < 2)
         return CheckResult::Continue;
 
+    if (cover) cover->hide();
     QMessageBox box;
     box.setIcon(QMessageBox::Warning);
     box.setWindowTitle("BATorrent — Recovery");

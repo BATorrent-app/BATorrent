@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
     app.processEvents();
 
     bool safeMode = false;
-    switch (BootHealth::checkCrashSentinel()) {
+    switch (BootHealth::checkCrashSentinel(&splash)) {
     case BootHealth::CheckResult::ExitZero: return 0;
     case BootHealth::CheckResult::ExitOne:  return 1;
     case BootHealth::CheckResult::ContinueSafeMode: safeMode = true; break;

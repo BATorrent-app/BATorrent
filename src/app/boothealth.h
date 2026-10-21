@@ -5,6 +5,8 @@
 #ifndef BATORRENT_BOOTHEALTH_H
 #define BATORRENT_BOOTHEALTH_H
 
+class QWidget;
+
 // Startup crash sentinel + libtorrent ABI guards before SessionManager construction.
 namespace BootHealth {
 
@@ -15,7 +17,9 @@ enum class CheckResult {
     ExitOne,
 };
 
-CheckResult checkCrashSentinel();
+// `cover`: the splash, hidden before the recovery box opens: on top of it, it
+// hid the box's text and buttons, one of which wipes the settings.
+CheckResult checkCrashSentinel(QWidget *cover = nullptr);
 CheckResult checkLibtorrentAbi();
 
 } // namespace BootHealth

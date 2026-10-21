@@ -122,6 +122,7 @@ set(COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/services/downloads/httpmergeengine.cpp
     ${CMAKE_SOURCE_DIR}/src/app/vpnwiring.cpp
     ${CMAKE_SOURCE_DIR}/src/app/alttap.cpp
+    ${CMAKE_SOURCE_DIR}/src/app/boothealth.cpp
     ${CMAKE_SOURCE_DIR}/src/services/vpn/wgtunnel.h
     ${CMAKE_SOURCE_DIR}/src/services/vpn/vpnmanager.h
     ${CMAKE_SOURCE_DIR}/src/services/vpn/vpnmanager.cpp

@@ -38,6 +38,12 @@
 #include "bridges/search/qmlsearchbridge_util.h"
 #include "services/discovery/addonmanager.h"
 #include "services/discovery/discoveryservice.h"
+#include "app/boothealth.h"
+
+#include <QMessageBox>
+#include <QPushButton>
+#include <QSplashScreen>
+#include <QTimer>
 #include "nointernet.h"
 #include "httptestserver.h"
 #include "bridges/qmlupdaterbridge.h"
@@ -1322,6 +1328,36 @@ TEST_CASE("Search bridge: the best pick for a film is the film, not a box set", 
     const int best = bridge.bestResultIndex();
     REQUIRE(best >= 0);
     CHECK(bridge.results().at(best).toMap().value("name").toString() == film.torrentName);
+}
+
+// The splash stayed on top of the recovery box and covered its text and
+// buttons: a blank window whose buttons include "Reset settings".
+TEST_CASE("Boot health: the recovery box is not under the splash", "[bridge][boothealth]")
+{
+    app();
+    QSettings st;
+    st.setValue("bootCrashes", 2);
+    st.setValue("bootInProgress", false);
+    QSplashScreen splash(QPixmap(16, 16));
+    splash.show();
+
+    bool boxOpened = false, splashShown = true;
+    QTimer poll;
+    QObject::connect(&poll, &QTimer::timeout, [&] {
+        auto *box = qobject_cast<QMessageBox *>(QApplication::activeModalWidget());
+        if (!box) return;
+        boxOpened = true;
+        splashShown = splash.isVisible();
+        for (QAbstractButton *b : box->buttons())
+            if (b->text() == QStringLiteral("Continue anyway")) b->click();
+    });
+    poll.start(20);
+    CHECK(BootHealth::checkCrashSentinel(&splash) == BootHealth::CheckResult::ContinueSafeMode);
+    poll.stop();
+    CHECK(boxOpened);
+    CHECK_FALSE(splashShown);
+    st.remove("bootCrashes");
+    st.remove("bootInProgress");
 }
 
 TEST_CASE("Session bridge: nextFilmInLibrary finds the library's next film of the collection", "[bridge][session][collection]")
