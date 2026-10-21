@@ -1356,6 +1356,7 @@
   "find_all_releases": "全部资源",
   "find_simple_view": "简洁视图",
   "find_all_qualities": "全部画质",
+  "find_recommended_first": "推荐优先",
   "find_most_seeded": "做种最多优先",
   "find_newest_first": "最新优先",
   "find_needs": "需要 %1",

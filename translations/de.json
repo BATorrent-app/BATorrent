@@ -1356,6 +1356,7 @@
   "find_all_releases": "Alle Releases",
   "find_simple_view": "Einfache Ansicht",
   "find_all_qualities": "Alle Qualitäten",
+  "find_recommended_first": "Empfohlene zuerst",
   "find_most_seeded": "Meiste Seeds zuerst",
   "find_newest_first": "Neueste zuerst",
   "find_needs": "Benötigt %1",

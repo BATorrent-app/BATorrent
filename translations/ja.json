@@ -1356,6 +1356,7 @@
   "find_all_releases": "すべてのリリース",
   "find_simple_view": "シンプル表示",
   "find_all_qualities": "すべての画質",
+  "find_recommended_first": "おすすめ順",
   "find_most_seeded": "シード数の多い順",
   "find_newest_first": "新しい順",
   "find_needs": "必要容量 %1",

@@ -213,6 +213,26 @@ TestCase {
         compare(rows[0]._idx, 0)
     }
 
+    // A Harry Potter page in Portuguese, sorted by seeds alone, opened on three
+    // Russian releases. Recommended: the pick, then your language, then the
+    // original or unmarked, then other languages; seeds within each.
+    function test_recommendedPutsYourLanguageBeforeOthers() {
+        var rows = logic.tagged([ rel({ name: "ru", langs: ["RU", "EN"], seedsN: 580 }),
+                                  rel({ name: "en", langs: [], seedsN: 575 }),
+                                  rel({ name: "pt-dub", langs: ["PT"], native: true, seedsN: 10 }),
+                                  rel({ name: "pt-sub", langs: ["PT"], native: true, seedsN: 40 }),
+                                  rel({ name: "eng", langs: ["EN"], seedsN: 445 }),
+                                  rel({ name: "fr", langs: ["FR"], seedsN: 900 }) ])
+        var names = function (out) { return out.map(function (r) { return r.name }) }
+        compare(names(logic.sortRows(rows, "recommended", null, 2)),
+                [ "pt-dub", "pt-sub", "en", "eng", "fr", "ru" ])
+        // no pick in the list: the same order without it up front
+        compare(names(logic.sortRows(rows, "recommended", null, -1)),
+                [ "pt-sub", "pt-dub", "en", "eng", "fr", "ru" ])
+        // seeds alone stays as it was
+        compare(names(logic.sortRows(rows, "seeds", null, 2))[0], "fr")
+    }
+
     function test_theNextEpisodeIsTheNextOneOnOffer() {
         var res = [ rel({ name: "e3", season: 1, episode: 3, quality: "1080p", seedsN: 5 }),
                     rel({ name: "e4-720", season: 1, episode: 4, quality: "720p", seedsN: 50 }),

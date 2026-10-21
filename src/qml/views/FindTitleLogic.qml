@@ -83,10 +83,25 @@ QtObject {
     // Newest build first for a game: a repack of the latest patch beats a
     // better-seeded copy of an older one, because the older one is what you
     // then patch.
-    function sortRows(rows, key, compareVersions) {
+    // Recommended, for a film: the pick, then releases in your language, then
+    // the original or unmarked ones, then those in languages you didn't ask
+    // for; seeds within each. By seeds alone a page in Portuguese opened on
+    // three Russian releases.
+    function langTier(r) {
+        if (r.native) return 0
+        var other = (r.langs || []).some(function (l) { return l !== "EN" && l !== "MULTI" })
+        return other ? 2 : 1
+    }
+
+    function sortRows(rows, key, compareVersions, bestIdx) {
         var out = rows.slice()
         if (!key) return out
-        if (key === "size_desc")
+        if (key === "recommended")
+            out.sort(function (a, b) {
+                var pa = a._idx === bestIdx ? 0 : 1, pb = b._idx === bestIdx ? 0 : 1
+                return pa - pb || langTier(a) - langTier(b) || bySeeds(a, b)
+            })
+        else if (key === "size_desc")
             out.sort(function (a, b) { return (b.sizeBytes || 0) - (a.sizeBytes || 0) || bySeeds(a, b) })
         else if (key === "size_asc")
             out.sort(function (a, b) { return (a.sizeBytes || 0) - (b.sizeBytes || 0) || bySeeds(a, b) })

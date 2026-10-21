@@ -1356,6 +1356,7 @@
   "find_all_releases": "Все релизы",
   "find_simple_view": "Простой вид",
   "find_all_qualities": "Любое качество",
+  "find_recommended_first": "Сначала рекомендуемые",
   "find_most_seeded": "Сначала больше сидов",
   "find_newest_first": "Сначала новые",
   "find_needs": "Нужно %1",

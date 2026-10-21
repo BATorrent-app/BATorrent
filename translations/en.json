@@ -1356,6 +1356,7 @@
   "find_all_releases": "All releases",
   "find_simple_view": "Simple view",
   "find_all_qualities": "All qualities",
+  "find_recommended_first": "Recommended first",
   "find_most_seeded": "Most seeded first",
   "find_newest_first": "Newest first",
   "find_needs": "Needs %1",

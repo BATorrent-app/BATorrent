@@ -1356,6 +1356,7 @@
   "find_all_releases": "Усі релізи",
   "find_simple_view": "Простий вигляд",
   "find_all_qualities": "Будь-яка якість",
+  "find_recommended_first": "Спочатку рекомендовані",
   "find_most_seeded": "Спершу більше сидів",
   "find_newest_first": "Спершу нові",
   "find_needs": "Потрібно %1",

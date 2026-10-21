@@ -1356,6 +1356,7 @@
   "find_all_releases": "Tüm sürümler",
   "find_simple_view": "Basit görünüm",
   "find_all_qualities": "Tüm kaliteler",
+  "find_recommended_first": "Önerilenler önce",
   "find_most_seeded": "En çok seed önce",
   "find_newest_first": "En yeni önce",
   "find_needs": "%1 gerekli",

@@ -31,7 +31,7 @@ ColumnLayout {
     readonly property var shown: logic.sortRows(
         logic.applyFilters(rows, { quality: quality, isGame: isGame, hideCam: hideCam, myLang: myLang,
                                    fits: fits, free: sv.saveFree }),
-        sortKey, sv.api ? function (a, b) { return sv.api.compareBuildVersions(a, b) } : null)
+        sortKey, sv.api ? function (a, b) { return sv.api.compareBuildVersions(a, b) } : null, bestIdx)
     // results is read so the pick follows a new batch of releases
     readonly property int bestIdx: sv.api && sv.results.length >= 0 ? sv.api.bestResultIndex() : -1
 

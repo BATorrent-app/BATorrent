@@ -18,14 +18,15 @@ ColumnLayout {
 
     spacing: 0
 
-    property string sortKey: isGame ? "newest" : "seeds"
+    property string sortKey: isGame ? "newest" : "recommended"
     readonly property var rows: {
         if (!sv.api || !visible) return []   // a series' page has its own lists
         var api = sv.api
         var qsets = api.queryWordSets()
         return logic.onTitle(sv.results, function (n) { return api.relevanceMulti(n, qsets) })
     }
-    readonly property var sortOptions: (isGame ? [{ value: "newest", label: (i18n.language, i18n.t("find_newest_first")) }] : [])
+    readonly property var sortOptions: (isGame ? [{ value: "newest", label: (i18n.language, i18n.t("find_newest_first")) }]
+                                               : [{ value: "recommended", label: (i18n.language, i18n.t("find_recommended_first")) }])
         .concat([{ value: "seeds", label: (i18n.language, i18n.t("find_most_seeded")) },
                  { value: "size_desc", label: (i18n.language, i18n.t("find_largest_first")) },
                  { value: "size_asc", label: (i18n.language, i18n.t("find_smallest_first")) }])
