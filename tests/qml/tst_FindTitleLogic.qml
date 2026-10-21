@@ -233,6 +233,17 @@ TestCase {
         compare(names(logic.sortRows(rows, "seeds", null, 2))[0], "fr")
     }
 
+    // A box set of every film had more seeds than the film alone and sat right
+    // under the pick. Within a group the film comes first; the sets follow.
+    function test_recommendedPutsTheFilmBeforeItsBoxSets() {
+        var rows = logic.tagged([ rel({ name: "box", langs: ["PT"], native: true, seedsN: 60, inPack: true }),
+                                  rel({ name: "film", langs: ["PT"], native: true, seedsN: 3 }),
+                                  rel({ name: "en-box", langs: [], seedsN: 500, inPack: true }),
+                                  rel({ name: "en-film", langs: [], seedsN: 40 }) ])
+        compare(logic.sortRows(rows, "recommended", null, -1).map(function (r) { return r.name }),
+                [ "film", "box", "en-film", "en-box" ])
+    }
+
     function test_theNextEpisodeIsTheNextOneOnOffer() {
         var res = [ rel({ name: "e3", season: 1, episode: 3, quality: "1080p", seedsN: 5 }),
                     rel({ name: "e4-720", season: 1, episode: 4, quality: "720p", seedsN: 50 }),

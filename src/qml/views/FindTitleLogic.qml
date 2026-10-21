@@ -99,7 +99,8 @@ QtObject {
         if (key === "recommended")
             out.sort(function (a, b) {
                 var pa = a._idx === bestIdx ? 0 : 1, pb = b._idx === bestIdx ? 0 : 1
-                return pa - pb || langTier(a) - langTier(b) || bySeeds(a, b)
+                return pa - pb || langTier(a) - langTier(b)
+                    || (a.inPack ? 1 : 0) - (b.inPack ? 1 : 0) || bySeeds(a, b)
             })
         else if (key === "size_desc")
             out.sort(function (a, b) { return (b.sizeBytes || 0) - (a.sizeBytes || 0) || bySeeds(a, b) })
