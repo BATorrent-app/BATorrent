@@ -100,7 +100,7 @@ shaped a good part of what follows.
 
 ---
 
-## v5.0.0-beta3 (2026-10-22)
+## v5.0.0-beta4 (2026-10-22)
 
 The last test build before 5.0. It is a pre-release: the app only offers it to
 people on the beta update track (Settings, Updates).
