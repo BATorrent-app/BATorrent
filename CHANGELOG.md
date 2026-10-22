@@ -100,6 +100,45 @@ shaped a good part of what follows.
 
 ---
 
+## v5.0.0-beta3 (2026-10-22)
+
+The last test build before 5.0. It is a pre-release: the app only offers it to
+people on the beta update track (Settings, Updates).
+
+### Fixed
+- **A click on a film in Find did nothing.** It opens the film again.
+- **Few or no releases for a film opened in another language.** A film is now
+  searched under its translated, original and English titles, whichever way you
+  open it; punctuation no longer empties a search ("Philosopher's" found nothing
+  on The Pirate Bay); and a film's stream addons are asked by its IMDb id, as an
+  episode's already were. One Harry Potter page went from 8 releases to 201.
+- **The recommended release was in the wrong language.** A Russian "Dub", a
+  French "MULTI" or a Latin American "Dual-Lat" counted as a dub in yours. A box
+  set of every film is no longer the pick for one film.
+- **Sound with no picture.** The player switches to software decoding on its
+  own, and if there is still no picture it says so and offers an external
+  player.
+- A magnet with the VPN on could stall while direct downloads went on.
+- The Pirate Bay's "No results returned" showed up as a release.
+- "Because you watched" showed plain names instead of the titles' lettering.
+- The recovery window opened blank, under the splash.
+- Ctrl+A and Ctrl+V, the counters after deleting everything, Pause on finished
+  downloads, light theme toggles, and more from a tester's report.
+
+### New
+- **Releases open recommended first:** the pick, then your language, then the
+  original, then other languages. Most seeded first is still in the menu.
+- **Collections.** A film's page shows the rest of its collection, the library
+  keeps them together, and when a film ends the player offers the next one.
+- **Settings, Updates** shows your version, the latest one, when it last
+  checked and what happened, with Check now.
+- **Copy** says what it copies, and copies a direct download's link.
+- **A menu bar** in the title strip: press Alt, or keep it on in Appearance.
+- Crash reports can be turned off in Settings, Security.
+- Pictures of the app in What's new.
+
+---
+
 ## v5.0.0-beta2 (2026-10-19)
 
 A test build of 5.0. It is a pre-release: the app only offers it to people on
