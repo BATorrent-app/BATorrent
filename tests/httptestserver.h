@@ -29,6 +29,10 @@ inline QCoreApplication &ensureApp()
         // Keep every suite off the real user AppData (the manager persists a
         // sidecar there); tests get an isolated temp store instead.
         QStandardPaths::setTestModeEnabled(true);
+        // A suite that made its own app (test_bridge's QApplication) keeps it:
+        // a second one took its place, and the next widget in that process
+        // aborted with "Cannot create a QWidget without QApplication".
+        if (QCoreApplication *have = QCoreApplication::instance()) return have;
         return new QCoreApplication(argc, argv);
     }();
     return *a;
